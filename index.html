@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#7A1F2B" />
+  <meta name="description" content="Fotobudka ślubna z filtrami D & R - Dominika i Robert, 24.10.2026. Autor: Robert Kołodziejczyk" />
+  <title>Fotobudka · filtry D &amp; R · Dominika &amp; Robert</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+/* Fotobudka filtry - Dominika & Robert, 24.10.2026
+   Autor: Robert Kołodziejczyk */
+
+:root {
+  --cream: #FBF7F5;
+  --ivory: #FFFCFA;
+  --sand: #F2E6E4;
+  --sand-deep: #DCC4C0;
+  --bordo: #7A1F2B;
+  --bordo-deep: #5C1520;
+  --bordo-mid: #922A38;
+  --blush: #E8A4B4;
+  --blush-soft: #F5D6DE;
+  --blush-deep: #D4899A;
+  --charcoal: #3D2E32;
+  --muted: #8A757A;
+  --line: #EEDFE2;
+  --gold: #C9A24A;
+  --gold-light: #E8D5A3;
+  --gold-deep: #8B6914;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tap: 48px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  min-height: 100dvh;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: "Work Sans", system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--blush-soft) 0%, transparent 55%),
+    linear-gradient(165deg, #FFFCFA 0%, #FBF7F5 40%, #F7EEEF 70%, #F2E6E4 100%);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.app {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 12px 14px calc(16px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.header {
+  text-align: center;
+  padding: 8px 4px 4px;
+}
+
+.header .script {
+  font-family: "Great Vibes", cursive;
+  font-size: clamp(1.75rem, 7vw, 2.35rem);
+  color: var(--bordo);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.header .meta {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.stage-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: min(62vh, 600px);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #1a1012;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 12px 32px rgba(92, 21, 32, 0.18);
+  border: 1px solid var(--line);
+}
+
+.stage-wrap video,
+.stage-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#video {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#stage {
+  display: block;
+  background: #1a1012;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  z-index: 2;
+}
+
+.status-pill {
+  align-self: center;
+  background: rgba(255, 252, 250, 0.92);
+  color: var(--bordo-deep);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(61, 46, 50, 0.12);
+  max-width: 92%;
+  text-align: center;
+}
+
+.status-pill.error {
+  background: rgba(122, 31, 43, 0.94);
+  color: #fff;
+}
+
+.status-pill.ok {
+  background: rgba(168, 184, 154, 0.95);
+  color: #2a3324;
+}
+
+.author-badge {
+  align-self: flex-end;
+  font-size: 0.68rem;
+  color: rgba(255, 252, 250, 0.92);
+  background: rgba(61, 46, 50, 0.45);
+  backdrop-filter: blur(6px);
+  padding: 4px 8px;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.picker-label {
+  margin: 2px 2px 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.style-row {
+  display: grid;
+  gap: 8px;
+}
+
+.style-row-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.style-row-2 {
+  grid-template-columns: 1fr;
+}
+
+.style-row-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.style-row-scroll .style-btn {
+  flex: 1 1 calc(50% - 4px);
+  min-width: calc(50% - 4px);
+}
+
+@media (min-width: 400px) {
+  .style-row-scroll .style-btn {
+    flex: 1 1 calc(33.33% - 6px);
+    min-width: calc(33.33% - 6px);
+  }
+}
+
+.style-btn {
+  min-height: var(--tap);
+  border: 1.5px solid var(--line);
+  background: var(--ivory);
+  color: var(--charcoal);
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.style-btn:active { transform: scale(0.97); }
+
+.style-btn[aria-pressed="true"] {
+  border-color: var(--bordo);
+  background: linear-gradient(180deg, #fff 0%, var(--blush-soft) 100%);
+  color: var(--bordo-deep);
+  box-shadow: 0 0 0 2px rgba(122, 31, 43, 0.12);
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn {
+  min-height: var(--tap);
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  transition: transform 0.1s, opacity 0.15s;
+}
+
+.btn:active { transform: scale(0.98); }
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--ivory);
+  color: var(--bordo);
+  border: 1.5px solid var(--sand-deep);
+}
+
+.btn-primary {
+  background: linear-gradient(105deg, #5C1520 0%, #7A1F2B 48%, #922A38 100%);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(92, 21, 32, 0.28);
+}
+
+.hint {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0;
+  padding: 0 6px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding-bottom: 4px;
+}
+
+.footer strong { color: var(--bordo); font-weight: 600; }
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.12s;
+}
+
+.flash.on { opacity: 0.85; }
+
+@media (min-width: 600px) {
+  .app { padding-top: 20px; }
+  .style-btn { font-size: 0.86rem; }
+  .stage-wrap { max-height: min(68vh, 640px); }
+}
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1 class="script">Dominika &amp; Robert</h1>
+      <p class="meta">Fotobudka · 24.10.2026</p>
+    </header>
+
+    <section class="stage-wrap" aria-label="Podgląd kamery z filtrami">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="stage" aria-hidden="true"></canvas>
+      <div class="flash" id="flash" aria-hidden="true"></div>
+      <div class="hud">
+        <div id="status" class="status-pill" role="status" aria-live="polite">Start…</div>
+        <div class="author-badge">Autor: Robert Kołodziejczyk</div>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="Sterowanie">
+      <p class="picker-label" id="lbl-glasses">Okulary</p>
+      <div class="style-row style-row-3" role="group" aria-labelledby="lbl-glasses">
+        <button type="button" class="style-btn glasses-btn" data-glasses="gold" aria-pressed="true">
+          Złote D&amp;R
+        </button>
+        <button type="button" class="style-btn glasses-btn" data-glasses="heart" aria-pressed="false">
+          Serca D♥R
+        </button>
+        <button type="button" class="style-btn glasses-btn" data-glasses="none" aria-pressed="false">
+          Bez okularów
+        </button>
+      </div>
+
+      <p class="picker-label" id="lbl-accessory">Dodatek</p>
+      <div class="style-row style-row-scroll" role="group" aria-labelledby="lbl-accessory">
+        <button type="button" class="style-btn accessory-btn" data-accessory="none" aria-pressed="true">
+          Brak
+        </button>
+        <button type="button" class="style-btn accessory-btn" data-accessory="crown" aria-pressed="false">
+          Korona kwiatów
+        </button>
+        <button type="button" class="style-btn accessory-btn" data-accessory="veil" aria-pressed="false">
+          Welon
+        </button>
+        <button type="button" class="style-btn accessory-btn" data-accessory="veil3d" aria-pressed="false">
+          Welon 3D
+        </button>
+        <button type="button" class="style-btn accessory-btn" data-accessory="bowtie" aria-pressed="false">
+          Muszka
+        </button>
+        <button type="button" class="style-btn accessory-btn" data-accessory="bouquet" aria-pressed="false">
+          Bukiet
+        </button>
+        <button type="button" class="style-btn accessory-btn" data-accessory="caption" aria-pressed="false">
+          Napis z datą
+        </button>
+      </div>
+
+      <p class="picker-label" id="lbl-extra">Dodatkowo</p>
+      <div class="style-row style-row-2" role="group" aria-labelledby="lbl-extra">
+        <button type="button" class="style-btn extra-btn" data-extra="bubble" aria-pressed="false">
+          Dymek „Tak!”
+        </button>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="btn btn-secondary" id="btn-restart">
+          Kamera
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-capture" disabled>
+          Zrób zdjęcie
+        </button>
+      </div>
+
+      <p class="hint">
+        Ustaw twarz na wprost, w dobrym świetle. Możesz łączyć okulary z dodatkiem i dymkiem.
+        Zdjęcie zapisuje się jako JPG na urządzeniu (bez wysyłki).
+      </p>
+    </section>
+
+    <footer class="footer">
+      <strong>Autor: Robert Kołodziejczyk</strong>
+      - mockup fotobudki ślubnej
+    </footer>
+  </main>
+
+  <script type="module">
+/**
+ * Fotobudka ślubna z filtrami śledzącymi twarz (MediaPipe Face Landmarker)
+ * Dominika & Robert · 24.10.2026
+ * Autor: Robert Kołodziejczyk
+ */
+
+import {
+  FilesetResolver,
+  FaceLandmarker,
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs";
+
+const CDN_WASM =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm";
+const CDN_MODEL =
+  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+
+/** MediaPipe Face Mesh indices */
+const LM = {
+  leftOuter: 33,
+  leftInner: 133,
+  rightInner: 362,
+  rightOuter: 263,
+  bridge: 168,
+  noseBridge: 6,
+  forehead: 10,
+  foreheadUpper: 9,
+  chin: 152,
+  leftCheek: 234,
+  rightCheek: 454,
+  // temples / crown sides
+  leftTemple: 54,
+  rightTemple: 284,
+  leftForehead: 103,
+  rightForehead: 332,
+  leftBrowOuter: 70,
+  rightBrowOuter: 300,
+  // jaw / neck area
+  leftJaw: 172,
+  rightJaw: 397,
+  leftJawMid: 150,
+  rightJawMid: 379,
+  underChin: 175,
+  // mouth corners for speech bubble orientation
+  mouthLeft: 61,
+  mouthRight: 291,
+};
+
+const $ = (sel) => document.querySelector(sel);
+
+const video = $("#video");
+const stage = $("#stage");
+const ctx = stage.getContext("2d", { alpha: false });
+const statusEl = $("#status");
+const flashEl = $("#flash");
+const btnCapture = $("#btn-capture");
+const btnRestart = $("#btn-restart");
+const glassesBtns = [...document.querySelectorAll(".glasses-btn")];
+const accessoryBtns = [...document.querySelectorAll(".accessory-btn")];
+const bubbleBtn = document.querySelector('.extra-btn[data-extra="bubble"]');
+
+let faceLandmarker = null;
+let stream = null;
+let rafId = 0;
+let lastVideoTime = -1;
+let glassesStyle = "gold"; // gold | heart | none
+let accessoryStyle = "none"; // none | crown | veil | veil3d | bowtie | bouquet | caption
+let showBubble = false;
+let lastLandmarks = null;
+let lastMatrix = null;
+let running = false;
+
+function setStatus(text, kind = "") {
+  statusEl.textContent = text;
+  statusEl.className = "status-pill" + (kind ? ` ${kind}` : "");
+  statusEl.hidden = !text;
+}
+
+function isSecureContextOk() {
+  if (window.isSecureContext) return true;
+  const h = location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+}
+
+async function createLandmarker(wasmPath, modelPath) {
+  const vision = await FilesetResolver.forVisionTasks(wasmPath);
+  const base = {
+    runningMode: "VIDEO",
+    numFaces: 1,
+    outputFaceBlendshapes: false,
+    outputFacialTransformationMatrixes: true,
+  };
+  try {
+    return await FaceLandmarker.createFromOptions(vision, {
+      ...base,
+      baseOptions: { modelAssetPath: modelPath, delegate: "GPU" },
+    });
+  } catch (gpuErr) {
+    console.warn("GPU delegate niedostępny, próbuję CPU:", gpuErr);
+    return FaceLandmarker.createFromOptions(vision, {
+      ...base,
+      baseOptions: { modelAssetPath: modelPath, delegate: "CPU" },
+    });
+  }
+}
+
+async function initLandmarker() {
+  setStatus("Ładowanie modelu twarzy…");
+  try {
+    faceLandmarker = await createLandmarker(CDN_WASM, CDN_MODEL);
+  } catch (err) {
+    console.error(err);
+    throw new Error(
+      "Nie udało się załadować MediaPipe z CDN. Sprawdź połączenie z internetem."
+    );
+  }
+}
+
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw Object.assign(new Error("Brak getUserMedia"), { code: "NO_API" });
+  }
+  if (!isSecureContextOk()) {
+    throw Object.assign(new Error("Wymagane HTTPS"), { code: "NO_HTTPS" });
+  }
+
+  setStatus("Proszę o dostęp do kamery…");
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: "user" },
+        width: { ideal: 1280 },
+        height: { ideal: 960 },
+      },
+    });
+  } catch (err) {
+    const name = err?.name || "";
+    if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+      throw Object.assign(new Error("Odmowa"), { code: "DENIED" });
+    }
+    if (
+      name === "NotFoundError" ||
+      name === "DevicesNotFoundError" ||
+      name === "OverconstrainedError"
+    ) {
+      throw Object.assign(new Error("Brak kamery"), { code: "NO_CAMERA" });
+    }
+    throw Object.assign(err || new Error("Kamera"), { code: "CAMERA" });
+  }
+
+  video.srcObject = stream;
+  await video.play();
+  resizeStage();
+  btnCapture.disabled = false;
+  setStatus("Kamera OK · szukam twarzy…", "ok");
+  setTimeout(() => {
+    if (running && lastLandmarks) setStatus("");
+  }, 1800);
+}
+
+function errorMessage(err) {
+  switch (err?.code) {
+    case "NO_HTTPS":
+      return "Kamera wymaga HTTPS lub localhost. Otwórz przez lokalny serwer (nie file://).";
+    case "DENIED":
+      return "Odmowa dostępu do kamery. Zezwól w ustawieniach przeglądarki i odśwież.";
+    case "NO_CAMERA":
+      return "Brak kamery. Podłącz kamerę lub sprawdź uprawnienia systemu.";
+    case "NO_API":
+      return "Ta przeglądarka nie obsługuje kamery (getUserMedia).";
+    default:
+      return err?.message
+        ? `Błąd kamery: ${err.message}`
+        : "Nie udało się uruchomić kamery.";
+  }
+}
+
+function resizeStage() {
+  const wrap = stage.parentElement;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  stage.width = Math.round(w * dpr);
+  stage.height = Math.round(h * dpr);
+  stage.style.width = w + "px";
+  stage.style.height = h + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function pt(landmarks, idx, w, h) {
+  const p = landmarks[idx];
+  // Mirror X for selfie preview (user-facing camera)
+  return { x: (1 - p.x) * w, y: p.y * h, z: p.z };
+}
+
+function dist(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.hypot(dx, dy);
+}
+
+function roundRectPath(c, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  c.beginPath();
+  c.moveTo(x + rr, y);
+  c.arcTo(x + w, y, x + w, y + h, rr);
+  c.arcTo(x + w, y + h, x, y + h, rr);
+  c.arcTo(x, y + h, x, y, rr);
+  c.arcTo(x, y, x + w, y, rr);
+  c.closePath();
+}
+
+/** Prefer MediaPipe facial matrix yaw when available (column-major 4x4). */
+function yawFromMatrix(matrixData) {
+  if (!matrixData) return null;
+  const m = matrixData.data || matrixData;
+  if (!m || m.length < 16) return null;
+  // rotation: R = [[m0,m4,m8],[m1,m5,m9],[m2,m6,m10]] column-major
+  // yaw approx atan2(-R20, R00) with selfie mirror awareness
+  const r00 = m[0];
+  const r20 = m[2];
+  return Math.atan2(-r20, r00);
+}
+
+
+/** Shared face pose used by glasses and accessories */
+function facePose(landmarks, w, h) {
+  const L = pt(landmarks, LM.leftOuter, w, h);
+  const Li = pt(landmarks, LM.leftInner, w, h);
+  const Ri = pt(landmarks, LM.rightInner, w, h);
+  const R = pt(landmarks, LM.rightOuter, w, h);
+  const bridge = pt(landmarks, LM.bridge, w, h);
+  const nose = pt(landmarks, LM.noseBridge, w, h);
+  const cheekL = pt(landmarks, LM.leftCheek, w, h);
+  const cheekR = pt(landmarks, LM.rightCheek, w, h);
+  const forehead = pt(landmarks, LM.forehead, w, h);
+  const chin = pt(landmarks, LM.chin, w, h);
+  const templeL = pt(landmarks, LM.leftTemple, w, h);
+  const templeR = pt(landmarks, LM.rightTemple, w, h);
+  const foreL = pt(landmarks, LM.leftForehead, w, h);
+  const foreR = pt(landmarks, LM.rightForehead, w, h);
+  const jawL = pt(landmarks, LM.leftJaw, w, h);
+  const jawR = pt(landmarks, LM.rightJaw, w, h);
+  const underChin = pt(landmarks, LM.underChin, w, h);
+
+  const eyeMid = {
+    x: (Li.x + Ri.x) / 2,
+    y: (Li.y + Ri.y) / 2,
+  };
+  const cx = (eyeMid.x + bridge.x) / 2;
+  const cy = eyeMid.y * 0.65 + bridge.y * 0.35;
+
+  const eyeSpan = dist(L, R);
+  const faceWidth = dist(cheekL, cheekR);
+  const faceHeight = dist(forehead, chin);
+  const width = Math.max(eyeSpan * 1.55, faceWidth * 0.72);
+  const height = width * 0.38;
+
+  const roll = Math.atan2(R.y - L.y, R.x - L.x);
+  const midCheekX = (cheekL.x + cheekR.x) / 2;
+  const yaw = Math.atan2(nose.x - midCheekX, faceWidth) * 1.2;
+  const pitch = Math.atan2(bridge.y - eyeMid.y, eyeSpan) * 0.8;
+
+  // Crown / top of head estimate (above forehead landmark)
+  const crown = {
+    x: forehead.x + Math.sin(roll) * faceHeight * 0.08,
+    y: forehead.y - faceHeight * 0.28,
+  };
+
+  return {
+    cx,
+    cy,
+    width,
+    height,
+    roll,
+    yaw,
+    pitch,
+    L,
+    R,
+    bridge,
+    nose,
+    cheekL,
+    cheekR,
+    forehead,
+    chin,
+    templeL,
+    templeR,
+    foreL,
+    foreR,
+    jawL,
+    jawR,
+    underChin,
+    eyeMid,
+    eyeSpan,
+    faceWidth,
+    faceHeight,
+    crown,
+  };
+}
+
+function glassesPoseFromFace(pose) {
+  return {
+    cx: pose.cx,
+    cy: pose.cy,
+    width: pose.width,
+    height: pose.height,
+    roll: pose.roll,
+    yaw: pose.yaw,
+    pitch: pose.pitch,
+    L: pose.L,
+    R: pose.R,
+    bridge: pose.bridge,
+  };
+}
+
+function drawRoundedLens(c, x, y, rw, rh) {
+  const r = Math.min(rw, rh) * 0.45;
+  c.beginPath();
+  c.moveTo(x - rw + r, y - rh);
+  c.lineTo(x + rw - r, y - rh);
+  c.quadraticCurveTo(x + rw, y - rh, x + rw, y - rh + r);
+  c.lineTo(x + rw, y + rh - r);
+  c.quadraticCurveTo(x + rw, y + rh, x + rw - r, y + rh);
+  c.lineTo(x - rw + r, y + rh);
+  c.quadraticCurveTo(x - rw, y + rh, x - rw, y + rh - r);
+  c.lineTo(x - rw, y - rh + r);
+  c.quadraticCurveTo(x - rw, y - rh, x - rw + r, y - rh);
+  c.closePath();
+}
+
+function drawHeartPath(c, x, y, s) {
+  c.beginPath();
+  c.moveTo(x, y + s * 0.35);
+  c.bezierCurveTo(x, y + s * 0.1, x - s * 0.5, y - s * 0.35, x - s * 0.5, y - s * 0.05);
+  c.bezierCurveTo(x - s * 0.5, y + s * 0.2, x, y + s * 0.45, x, y + s * 0.7);
+  c.bezierCurveTo(x, y + s * 0.45, x + s * 0.5, y + s * 0.2, x + s * 0.5, y - s * 0.05);
+  c.bezierCurveTo(x + s * 0.5, y - s * 0.35, x, y + s * 0.1, x, y + s * 0.35);
+  c.closePath();
+}
+
+function drawGoldGlasses(c, pose) {
+  const { cx, cy, width, height, roll, yaw } = pose;
+  const lensW = width * 0.28;
+  const lensH = height * 0.42;
+  const gap = width * 0.08;
+  const skew = Math.sin(yaw) * width * 0.04;
+
+  c.save();
+  c.translate(cx, cy);
+  c.rotate(roll);
+  c.scale(1 + Math.sin(yaw) * 0.08, 1);
+
+  c.strokeStyle = "#C9A24A";
+  c.lineWidth = Math.max(2, width * 0.018);
+  c.lineCap = "round";
+  c.beginPath();
+  c.moveTo(-gap - lensW * 2 + skew, -lensH * 0.1);
+  c.lineTo(-width * 0.52 + skew * 1.5, -lensH * 0.35);
+  c.moveTo(gap + lensW * 2 + skew, -lensH * 0.1);
+  c.lineTo(width * 0.52 + skew * 1.5, -lensH * 0.35);
+  c.stroke();
+
+  c.beginPath();
+  c.moveTo(-gap + skew * 0.3, 0);
+  c.quadraticCurveTo(0, -lensH * 0.35, gap + skew * 0.3, 0);
+  c.stroke();
+
+  const lenses = [
+    { x: -gap - lensW + skew, label: "D" },
+    { x: gap + lensW + skew, label: "R" },
+  ];
+
+  for (const lens of lenses) {
+    const grad = c.createRadialGradient(
+      lens.x - lensW * 0.2,
+      -lensH * 0.3,
+      2,
+      lens.x,
+      0,
+      lensW * 1.4
+    );
+    grad.addColorStop(0, "rgba(255, 252, 250, 0.28)");
+    grad.addColorStop(0.55, "rgba(232, 213, 163, 0.12)");
+    grad.addColorStop(1, "rgba(122, 31, 43, 0.08)");
+    drawRoundedLens(c, lens.x, 0, lensW, lensH);
+    c.fillStyle = grad;
+    c.fill();
+
+    c.strokeStyle = "#C9A24A";
+    c.lineWidth = Math.max(2.5, width * 0.022);
+    c.stroke();
+    c.strokeStyle = "#E8D5A3";
+    c.lineWidth = Math.max(1, width * 0.008);
+    drawRoundedLens(c, lens.x, 0, lensW * 0.92, lensH * 0.9);
+    c.stroke();
+
+    c.fillStyle = "rgba(92, 21, 32, 0.78)";
+    c.font = `600 ${Math.round(lensH * 0.95)}px "Cormorant Garamond", serif`;
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillText(lens.label, lens.x, lensH * 0.05);
+  }
+
+  const bw = gap * 1.8;
+  const bh = height * 0.22;
+  c.fillStyle = "#C9A24A";
+  c.beginPath();
+  {
+    const x = -bw / 2,
+      y = -bh * 1.4,
+      rw = bw,
+      rh = bh,
+      r = bh * 0.35;
+    c.moveTo(x + r, y);
+    c.arcTo(x + rw, y, x + rw, y + rh, r);
+    c.arcTo(x + rw, y + rh, x, y + rh, r);
+    c.arcTo(x, y + rh, x, y, r);
+    c.arcTo(x, y, x + rw, y, r);
+    c.closePath();
+  }
+  c.fill();
+  c.fillStyle = "#5C1520";
+  c.font = `700 ${Math.round(bh * 0.72)}px "Work Sans", sans-serif`;
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillText("D & R", 0, -bh * 0.9);
+
+  c.restore();
+}
+
+function drawHeartGlasses(c, pose) {
+  const { cx, cy, width, height, roll, yaw } = pose;
+  const lensW = width * 0.27;
+  const lensH = height * 0.4;
+  const gap = width * 0.09;
+  const skew = Math.sin(yaw) * width * 0.04;
+
+  c.save();
+  c.translate(cx, cy);
+  c.rotate(roll);
+  c.scale(1 + Math.sin(yaw) * 0.08, 1);
+
+  c.strokeStyle = "#7A1F2B";
+  c.lineWidth = Math.max(2.2, width * 0.02);
+  c.lineCap = "round";
+  c.beginPath();
+  c.moveTo(-gap - lensW * 2 + skew, 0);
+  c.lineTo(-width * 0.5 + skew * 1.4, -lensH * 0.25);
+  c.moveTo(gap + lensW * 2 + skew, 0);
+  c.lineTo(width * 0.5 + skew * 1.4, -lensH * 0.25);
+  c.stroke();
+
+  drawHeartPath(c, 0, -lensH * 0.55, Math.max(10, width * 0.07));
+  c.fillStyle = "#7A1F2B";
+  c.fill();
+
+  const lenses = [
+    { x: -gap - lensW + skew, label: "D" },
+    { x: gap + lensW + skew, label: "R" },
+  ];
+
+  for (const lens of lenses) {
+    const grad = c.createRadialGradient(
+      lens.x - lensW * 0.15,
+      -lensH * 0.25,
+      1,
+      lens.x,
+      0,
+      lensW * 1.35
+    );
+    grad.addColorStop(0, "rgba(245, 214, 222, 0.45)");
+    grad.addColorStop(0.5, "rgba(232, 164, 180, 0.22)");
+    grad.addColorStop(1, "rgba(122, 31, 43, 0.18)");
+
+    drawRoundedLens(c, lens.x, 0, lensW, lensH);
+    c.fillStyle = grad;
+    c.fill();
+
+    c.strokeStyle = "#7A1F2B";
+    c.lineWidth = Math.max(2.8, width * 0.024);
+    c.stroke();
+    c.strokeStyle = "#E8A4B4";
+    c.lineWidth = Math.max(1.2, width * 0.01);
+    drawRoundedLens(c, lens.x, 0, lensW * 0.9, lensH * 0.88);
+    c.stroke();
+
+    const hx = lens.x + (lens.x < 0 ? -lensW * 0.85 : lensW * 0.85);
+    drawHeartPath(c, hx, -lensH * 0.85, Math.max(6, width * 0.035));
+    c.fillStyle = "#922A38";
+    c.fill();
+
+    c.fillStyle = "rgba(92, 21, 32, 0.85)";
+    c.font = `600 ${Math.round(lensH * 0.9)}px "Cormorant Garamond", serif`;
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillText(lens.label, lens.x, lensH * 0.06);
+  }
+
+  c.fillStyle = "#5C1520";
+  c.font = `700 ${Math.round(height * 0.2)}px "Work Sans", sans-serif`;
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillText("D♥R", 0, lensH * 0.95);
+
+  c.restore();
+}
+
+/* ---------- Easy / medium accessories ---------- */
+
+function drawFlower(c, x, y, s, petalColor, centerColor) {
+  c.save();
+  c.translate(x, y);
+  for (let i = 0; i < 5; i++) {
+    c.rotate((Math.PI * 2) / 5);
+    c.beginPath();
+    c.ellipse(0, -s * 0.45, s * 0.28, s * 0.42, 0, 0, Math.PI * 2);
+    c.fillStyle = petalColor;
+    c.fill();
+  }
+  c.beginPath();
+  c.arc(0, 0, s * 0.22, 0, Math.PI * 2);
+  c.fillStyle = centerColor;
+  c.fill();
+  c.restore();
+}
+
+function drawLeaf(c, x, y, s, angle) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(angle);
+  c.beginPath();
+  c.moveTo(0, 0);
+  c.quadraticCurveTo(s * 0.35, -s * 0.2, s * 0.7, 0);
+  c.quadraticCurveTo(s * 0.35, s * 0.2, 0, 0);
+  c.fillStyle = "rgba(90, 130, 70, 0.75)";
+  c.fill();
+  c.restore();
+}
+
+/** 1. Korona kwiatów - forehead / crown */
+function drawFlowerCrown(c, pose) {
+  const { crown, forehead, templeL, templeR, faceWidth, roll, yaw } = pose;
+  const span = faceWidth * 1.05;
+  const cy = crown.y * 0.55 + forehead.y * 0.45;
+  const cx = (templeL.x + templeR.x) / 2;
+
+  c.save();
+  c.translate(cx, cy);
+  c.rotate(roll);
+  c.scale(1 + Math.sin(yaw) * 0.1, 1 - Math.abs(Math.sin(yaw)) * 0.05);
+
+  // soft vine arc
+  c.strokeStyle = "rgba(90, 130, 70, 0.55)";
+  c.lineWidth = Math.max(2, faceWidth * 0.018);
+  c.lineCap = "round";
+  c.beginPath();
+  c.moveTo(-span * 0.52, faceWidth * 0.06);
+  c.quadraticCurveTo(0, -faceWidth * 0.12, span * 0.52, faceWidth * 0.06);
+  c.stroke();
+
+  const flowers = [
+    { t: -0.42, s: 0.09, petal: "#E8A4B4", center: "#C9A24A" },
+    { t: -0.22, s: 0.11, petal: "#F5D6DE", center: "#922A38" },
+    { t: 0.0, s: 0.13, petal: "#fff8f5", center: "#C9A24A" },
+    { t: 0.22, s: 0.11, petal: "#E8A4B4", center: "#7A1F2B" },
+    { t: 0.42, s: 0.09, petal: "#F5D6DE", center: "#C9A24A" },
+  ];
+
+  for (const f of flowers) {
+    const x = f.t * span;
+    const y = -faceWidth * 0.04 + Math.abs(f.t) * faceWidth * 0.1;
+    drawLeaf(c, x - faceWidth * 0.04, y + faceWidth * 0.02, faceWidth * 0.08, -0.6);
+    drawLeaf(c, x + faceWidth * 0.04, y + faceWidth * 0.02, faceWidth * 0.08, 0.6);
+    drawFlower(c, x, y, faceWidth * f.s, f.petal, f.center);
+  }
+
+  // tiny gold berries
+  c.fillStyle = "#C9A24A";
+  for (const t of [-0.32, -0.1, 0.1, 0.32]) {
+    c.beginPath();
+    c.arc(t * span, faceWidth * 0.02, Math.max(2, faceWidth * 0.015), 0, Math.PI * 2);
+    c.fill();
+  }
+
+  c.restore();
+}
+
+/** Shared veil geometry; perspective=true skews with yaw/roll */
+function drawVeilBase(c, pose, perspective) {
+  const {
+    crown,
+    forehead,
+    templeL,
+    templeR,
+    cheekL,
+    cheekR,
+    chin,
+    faceWidth,
+    faceHeight,
+    roll,
+    yaw,
+  } = pose;
+
+  const cx = crown.x;
+  const cy = crown.y;
+  const yawS = Math.sin(yaw);
+  const leftScale = perspective ? 1 - yawS * 0.35 : 1;
+  const rightScale = perspective ? 1 + yawS * 0.35 : 1;
+  const skewX = perspective ? yawS * faceWidth * 0.12 : 0;
+  const hang = faceHeight * (perspective ? 1.35 : 1.15);
+
+  c.save();
+  c.translate(cx + skewX, cy);
+  c.rotate(roll * (perspective ? 1.05 : 0.9));
+
+  // soft translucent panels left / right / center back
+  const leftEdge = -faceWidth * 0.72 * leftScale;
+  const rightEdge = faceWidth * 0.72 * rightScale;
+  const midDrop = hang * 0.55;
+
+  const veilGrad = c.createLinearGradient(0, 0, 0, hang);
+  veilGrad.addColorStop(0, "rgba(255, 252, 250, 0.72)");
+  veilGrad.addColorStop(0.35, "rgba(255, 252, 250, 0.38)");
+  veilGrad.addColorStop(1, "rgba(245, 214, 222, 0.08)");
+
+  // left panel
+  c.beginPath();
+  c.moveTo(-faceWidth * 0.08, 0);
+  c.quadraticCurveTo(leftEdge * 0.4, hang * 0.15, leftEdge, hang * 0.85);
+  c.quadraticCurveTo(leftEdge * 0.7, hang, -faceWidth * 0.05, midDrop);
+  c.closePath();
+  c.fillStyle = veilGrad;
+  c.fill();
+
+  // right panel
+  c.beginPath();
+  c.moveTo(faceWidth * 0.08, 0);
+  c.quadraticCurveTo(rightEdge * 0.4, hang * 0.15, rightEdge, hang * 0.85);
+  c.quadraticCurveTo(rightEdge * 0.7, hang, faceWidth * 0.05, midDrop);
+  c.closePath();
+  c.fillStyle = veilGrad;
+  c.fill();
+
+  // crown cap
+  c.beginPath();
+  c.moveTo(leftEdge * 0.35, faceHeight * 0.05);
+  c.quadraticCurveTo(0, -faceHeight * 0.12, rightEdge * 0.35, faceHeight * 0.05);
+  c.quadraticCurveTo(0, faceHeight * 0.08, leftEdge * 0.35, faceHeight * 0.05);
+  c.fillStyle = "rgba(255, 252, 250, 0.55)";
+  c.fill();
+
+  // delicate gold edge
+  c.strokeStyle = "rgba(201, 162, 74, 0.45)";
+  c.lineWidth = Math.max(1, faceWidth * 0.01);
+  c.beginPath();
+  c.moveTo(leftEdge * 0.9, hang * 0.7);
+  c.quadraticCurveTo(0, -faceHeight * 0.08, rightEdge * 0.9, hang * 0.7);
+  c.stroke();
+
+  // tiny sparkles along edge
+  c.fillStyle = "rgba(232, 213, 163, 0.7)";
+  for (let i = -3; i <= 3; i++) {
+    if (i === 0) continue;
+    const t = i / 3.5;
+    const sx = t * faceWidth * 0.55 * (t < 0 ? leftScale : rightScale);
+    const sy = Math.abs(t) * hang * 0.35;
+    c.beginPath();
+    c.arc(sx, sy, Math.max(1.2, faceWidth * 0.012), 0, Math.PI * 2);
+    c.fill();
+  }
+
+  c.restore();
+
+  // slight face-side soft wash (keeps face readable)
+  void forehead;
+  void templeL;
+  void templeR;
+  void cheekL;
+  void cheekR;
+  void chin;
+}
+
+function drawSimpleVeil(c, pose) {
+  drawVeilBase(c, pose, false);
+}
+
+function drawPerspectiveVeil(c, pose) {
+  drawVeilBase(c, pose, true);
+}
+
+/** 3. Muszka - bow tie under chin */
+function drawBowTie(c, pose) {
+  const { chin, underChin, jawL, jawR, faceWidth, roll, yaw } = pose;
+  const cx = (chin.x + underChin.x) / 2;
+  const cy = chin.y + faceWidth * 0.12;
+  const s = faceWidth * 0.22;
+
+  c.save();
+  c.translate(cx, cy);
+  c.rotate(roll * 0.6);
+  c.scale(1 + Math.sin(yaw) * 0.08, 1);
+
+  // wings
+  const wing = (dir) => {
+    c.beginPath();
+    c.moveTo(0, 0);
+    c.quadraticCurveTo(dir * s * 0.55, -s * 0.45, dir * s * 1.05, -s * 0.15);
+    c.quadraticCurveTo(dir * s * 1.15, 0, dir * s * 1.05, s * 0.15);
+    c.quadraticCurveTo(dir * s * 0.55, s * 0.45, 0, 0);
+    c.closePath();
+  };
+
+  const grad = c.createLinearGradient(-s, 0, s, 0);
+  grad.addColorStop(0, "#5C1520");
+  grad.addColorStop(0.5, "#7A1F2B");
+  grad.addColorStop(1, "#5C1520");
+  c.fillStyle = grad;
+  wing(-1);
+  c.fill();
+  wing(1);
+  c.fill();
+
+  // center knot
+  roundRectPath(c, -s * 0.18, -s * 0.22, s * 0.36, s * 0.44, s * 0.08);
+  c.fillStyle = "#922A38";
+  c.fill();
+  c.strokeStyle = "#C9A24A";
+  c.lineWidth = Math.max(1.5, faceWidth * 0.012);
+  c.stroke();
+
+  // gold dots
+  c.fillStyle = "#E8D5A3";
+  c.beginPath();
+  c.arc(0, 0, Math.max(2, s * 0.08), 0, Math.PI * 2);
+  c.fill();
+
+  void jawL;
+  void jawR;
+  c.restore();
+}
+
+/** 4. Dymek „Tak!” above head */
+function drawSpeechBubble(c, pose) {
+  const { crown, faceWidth, roll, yaw } = pose;
+  const bw = faceWidth * 0.55;
+  const bh = faceWidth * 0.28;
+  const bx = crown.x + Math.sin(yaw) * faceWidth * 0.05;
+  const by = crown.y - faceWidth * 0.22;
+
+  c.save();
+  c.translate(bx, by);
+  c.rotate(roll * 0.25);
+
+  // bubble body
+  roundRectPath(c, -bw / 2, -bh / 2, bw, bh, bh * 0.35);
+  c.fillStyle = "rgba(255, 252, 250, 0.94)";
+  c.fill();
+  c.strokeStyle = "#7A1F2B";
+  c.lineWidth = Math.max(2, faceWidth * 0.014);
+  c.stroke();
+
+  // tail pointing down toward head
+  c.beginPath();
+  c.moveTo(-bw * 0.08, bh / 2 - 1);
+  c.lineTo(0, bh / 2 + faceWidth * 0.1);
+  c.lineTo(bw * 0.12, bh / 2 - 1);
+  c.closePath();
+  c.fillStyle = "rgba(255, 252, 250, 0.94)";
+  c.fill();
+  c.strokeStyle = "#7A1F2B";
+  c.beginPath();
+  c.moveTo(-bw * 0.08, bh / 2 - 1);
+  c.lineTo(0, bh / 2 + faceWidth * 0.1);
+  c.lineTo(bw * 0.12, bh / 2 - 1);
+  c.stroke();
+
+  c.fillStyle = "#7A1F2B";
+  c.font = `700 ${Math.round(bh * 0.55)}px "Work Sans", sans-serif`;
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillText("Tak!", 0, bh * 0.04);
+
+  c.restore();
+}
+
+/** 5. Napis z datą - floating above / beside head */
+function drawCaption(c, pose) {
+  const { crown, faceWidth, roll, yaw } = pose;
+  const cx = crown.x;
+  const cy = crown.y - faceWidth * 0.18;
+
+  c.save();
+  c.translate(cx, cy);
+  c.rotate(roll * 0.2);
+  c.scale(1 + Math.sin(yaw) * 0.05, 1);
+
+  const padX = faceWidth * 0.12;
+  const line1 = "Dominika & Robert";
+  const line2 = "24.10.2026";
+
+  c.font = `600 ${Math.round(faceWidth * 0.11)}px "Great Vibes", cursive`;
+  const w1 = c.measureText(line1).width;
+  c.font = `600 ${Math.round(faceWidth * 0.075)}px "Cormorant Garamond", serif`;
+  const w2 = c.measureText(line2).width;
+  const boxW = Math.max(w1, w2) + padX * 2;
+  const boxH = faceWidth * 0.32;
+
+  c.fillStyle = "rgba(255, 252, 250, 0.88)";
+  c.strokeStyle = "rgba(201, 162, 74, 0.65)";
+  c.lineWidth = Math.max(1.5, faceWidth * 0.01);
+  roundRectPath(c, -boxW / 2, -boxH / 2, boxW, boxH, faceWidth * 0.04);
+  c.fill();
+  c.stroke();
+
+  c.fillStyle = "#7A1F2B";
+  c.font = `600 ${Math.round(faceWidth * 0.11)}px "Great Vibes", cursive`;
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillText(line1, 0, -boxH * 0.15);
+
+  c.fillStyle = "#5C1520";
+  c.font = `600 ${Math.round(faceWidth * 0.075)}px "Cormorant Garamond", serif`;
+  c.letterSpacing = "0.08em";
+  c.fillText(line2, 0, boxH * 0.28);
+
+  c.restore();
+}
+
+/** 7. Bukiet przy barku - left side preferred for mirrored selfie */
+function drawBouquet(c, pose) {
+  const {
+    cheekL,
+    jawL,
+    chin,
+    faceWidth,
+    faceHeight,
+    roll,
+    yaw,
+  } = pose;
+
+  // Estimate left shoulder: below/left of jaw, scaled by face size
+  // In mirrored selfie, "left" on screen is viewer's left (= person's right physically),
+  // but users expect bouquet on the side of the frame that feels natural for selfie.
+  // Prefer screen-left (cheekL after mirror).
+  const shoulderX = cheekL.x - faceWidth * 0.35 + Math.sin(yaw) * faceWidth * 0.1;
+  const shoulderY = chin.y + faceHeight * 0.35 + Math.cos(roll) * faceWidth * 0.02;
+  const s = faceWidth * 0.55;
+
+  c.save();
+  c.translate(shoulderX, shoulderY);
+  c.rotate(roll * 0.4 - 0.35 + Math.sin(yaw) * 0.15);
+  c.scale(1 + Math.sin(yaw) * 0.06, 1);
+
+  // stems
+  c.strokeStyle = "rgba(70, 110, 55, 0.85)";
+  c.lineWidth = Math.max(2, faceWidth * 0.018);
+  c.lineCap = "round";
+  for (const dx of [-0.08, 0, 0.08]) {
+    c.beginPath();
+    c.moveTo(dx * s, s * 0.35);
+    c.quadraticCurveTo(dx * s * 0.5, 0, dx * s * 0.2, -s * 0.35);
+    c.stroke();
+  }
+
+  // wrap ribbon
+  c.beginPath();
+  c.ellipse(0, s * 0.12, s * 0.18, s * 0.1, -0.2, 0, Math.PI * 2);
+  c.fillStyle = "#7A1F2B";
+  c.fill();
+  c.strokeStyle = "#C9A24A";
+  c.lineWidth = Math.max(1.2, faceWidth * 0.01);
+  c.stroke();
+
+  // ribbon tails
+  c.strokeStyle = "#922A38";
+  c.lineWidth = Math.max(2, faceWidth * 0.016);
+  c.beginPath();
+  c.moveTo(-s * 0.05, s * 0.18);
+  c.quadraticCurveTo(-s * 0.25, s * 0.4, -s * 0.15, s * 0.55);
+  c.moveTo(s * 0.05, s * 0.18);
+  c.quadraticCurveTo(s * 0.28, s * 0.38, s * 0.2, s * 0.55);
+  c.stroke();
+
+  // blooms
+  const blooms = [
+    { x: -0.18, y: -0.42, s: 0.16, p: "#E8A4B4", ctr: "#C9A24A" },
+    { x: 0.05, y: -0.5, s: 0.18, p: "#fff8f5", ctr: "#922A38" },
+    { x: 0.22, y: -0.35, s: 0.15, p: "#F5D6DE", ctr: "#C9A24A" },
+    { x: -0.05, y: -0.28, s: 0.12, p: "#E8A4B4", ctr: "#7A1F2B" },
+    { x: 0.12, y: -0.22, s: 0.11, p: "#F5D6DE", ctr: "#C9A24A" },
+  ];
+  for (const b of blooms) {
+    drawLeaf(c, b.x * s - s * 0.08, b.y * s, s * 0.14, -0.8);
+    drawFlower(c, b.x * s, b.y * s, s * b.s, b.p, b.ctr);
+  }
+
+  void jawL;
+  c.restore();
+}
+
+function drawAccessory(c, pose, style) {
+  switch (style) {
+    case "crown":
+      drawFlowerCrown(c, pose);
+      break;
+    case "veil":
+      drawSimpleVeil(c, pose);
+      break;
+    case "veil3d":
+      drawPerspectiveVeil(c, pose);
+      break;
+    case "bowtie":
+      drawBowTie(c, pose);
+      break;
+    case "bouquet":
+      drawBouquet(c, pose);
+      break;
+    case "caption":
+      drawCaption(c, pose);
+      break;
+    default:
+      break;
+  }
+}
+
+function drawFrame(landmarks) {
+  const wrap = stage.parentElement;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+
+  const vw = video.videoWidth || 640;
+  const vh = video.videoHeight || 480;
+  const scale = Math.max(w / vw, h / vh);
+  const dw = vw * scale;
+  const dh = vh * scale;
+  const dx = (w - dw) / 2;
+  const dy = (h - dh) / 2;
+
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+  // Mirror selfie
+  ctx.translate(w, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, dx, dy, dw, dh);
+  ctx.restore();
+
+  if (landmarks) {
+    const mappedRaw = landmarks.map((p) => ({
+      x: (dx + p.x * vw * scale) / w,
+      y: (dy + p.y * vh * scale) / h,
+      z: p.z,
+    }));
+    const pose = facePose(mappedRaw, w, h);
+    const matYaw = yawFromMatrix(lastMatrix);
+    if (matYaw != null && Number.isFinite(matYaw)) {
+      // Blend landmark yaw with matrix yaw (mirrored selfie: invert)
+      pose.yaw = pose.yaw * 0.35 + (-matYaw) * 0.65;
+    }
+
+    // Draw order: veil (behind feel) → bouquet → glasses → crown/bow/caption → bubble
+    const behindFirst =
+      accessoryStyle === "veil" ||
+      accessoryStyle === "veil3d" ||
+      accessoryStyle === "bouquet";
+    if (behindFirst) {
+      drawAccessory(ctx, pose, accessoryStyle);
+    }
+
+    if (glassesStyle === "gold") {
+      drawGoldGlasses(ctx, glassesPoseFromFace(pose));
+    } else if (glassesStyle === "heart") {
+      drawHeartGlasses(ctx, glassesPoseFromFace(pose));
+    }
+
+    if (!behindFirst && accessoryStyle !== "none") {
+      drawAccessory(ctx, pose, accessoryStyle);
+    }
+
+    if (showBubble) {
+      drawSpeechBubble(ctx, pose);
+    }
+  }
+
+  // Soft vignette
+  const g = ctx.createRadialGradient(
+    w / 2,
+    h / 2,
+    Math.min(w, h) * 0.35,
+    w / 2,
+    h / 2,
+    Math.max(w, h) * 0.72
+  );
+  g.addColorStop(0, "rgba(0,0,0,0)");
+  g.addColorStop(1, "rgba(61, 46, 50, 0.22)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function loop() {
+  if (!running) return;
+  rafId = requestAnimationFrame(loop);
+  if (!faceLandmarker || video.readyState < 2) return;
+
+  const now = performance.now();
+  if (video.currentTime === lastVideoTime) {
+    if (lastLandmarks || video.readyState >= 2) drawFrame(lastLandmarks);
+    return;
+  }
+  lastVideoTime = video.currentTime;
+
+  try {
+    const result = faceLandmarker.detectForVideo(video, now);
+    lastLandmarks =
+      result?.faceLandmarks?.length > 0 ? result.faceLandmarks[0] : null;
+    lastMatrix =
+      result?.facialTransformationMatrixes?.length > 0
+        ? result.facialTransformationMatrixes[0]
+        : null;
+    if (lastLandmarks && statusEl.textContent.includes("szukam")) {
+      setStatus("");
+    }
+  } catch (e) {
+    console.warn("detectForVideo", e);
+  }
+  drawFrame(lastLandmarks);
+}
+
+function captureJpeg() {
+  if (!video.videoWidth) return;
+  drawFrame(lastLandmarks);
+
+  const flash = () => {
+    flashEl.classList.add("on");
+    setTimeout(() => flashEl.classList.remove("on"), 120);
+  };
+  flash();
+
+  stage.toBlob(
+    (blob) => {
+      if (!blob) {
+        setStatus("Nie udało się zapisać zdjęcia.", "error");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      const name = `wesele-D-R-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.jpg`;
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setStatus("Zapisano JPG ✓", "ok");
+      setTimeout(() => setStatus(""), 2000);
+    },
+    "image/jpeg",
+    0.92
+  );
+}
+
+function setGlasses(style) {
+  glassesStyle = style;
+  glassesBtns.forEach((btn) => {
+    btn.setAttribute(
+      "aria-pressed",
+      String(btn.dataset.glasses === style)
+    );
+  });
+}
+
+function setAccessory(style) {
+  accessoryStyle = style;
+  accessoryBtns.forEach((btn) => {
+    btn.setAttribute(
+      "aria-pressed",
+      String(btn.dataset.accessory === style)
+    );
+  });
+}
+
+function setBubble(on) {
+  showBubble = on;
+  if (bubbleBtn) {
+    bubbleBtn.setAttribute("aria-pressed", String(on));
+  }
+}
+
+async function boot() {
+  running = true;
+  try {
+    await initLandmarker();
+    await startCamera();
+    loop();
+  } catch (err) {
+    console.error(err);
+    setStatus(errorMessage(err), "error");
+    btnCapture.disabled = true;
+  }
+}
+
+glassesBtns.forEach((btn) => {
+  btn.addEventListener("click", () => setGlasses(btn.dataset.glasses));
+});
+accessoryBtns.forEach((btn) => {
+  btn.addEventListener("click", () => setAccessory(btn.dataset.accessory));
+});
+if (bubbleBtn) {
+  bubbleBtn.addEventListener("click", () => setBubble(!showBubble));
+}
+
+btnCapture.addEventListener("click", () => captureJpeg());
+btnRestart.addEventListener("click", async () => {
+  cancelAnimationFrame(rafId);
+  running = false;
+  if (stream) {
+    stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+  }
+  lastLandmarks = null;
+  lastMatrix = null;
+  lastVideoTime = -1;
+  btnCapture.disabled = true;
+  await boot();
+});
+
+window.addEventListener("resize", () => {
+  resizeStage();
+  if (video.readyState >= 2) drawFrame(lastLandmarks);
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    cancelAnimationFrame(rafId);
+  } else if (running && stream) {
+    loop();
+  }
+});
+
+setGlasses("gold");
+setAccessory("none");
+setBubble(false);
+boot();
+
+
+  </script>
+</body>
+</html>
