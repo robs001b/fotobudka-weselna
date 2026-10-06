@@ -460,6 +460,13 @@ const LM = {
   mouthRight: 291,
 };
 
+/** Face oval contour (MediaPipe FACEMESH_FACE_OVAL) - used to keep the veil behind the face */
+const FACE_OVAL = [
+  10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379,
+  378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
+  162, 21, 54, 103, 67, 109,
+];
+
 const $ = (sel) => document.querySelector(sel);
 
 const video = $("#video");
@@ -671,16 +678,22 @@ function facePose(landmarks, w, h) {
   const width = Math.max(eyeSpan * 1.55, faceWidth * 0.72);
   const height = width * 0.38;
 
-  const roll = Math.atan2(R.y - L.y, R.x - L.x);
+  // Points are already mirrored (selfie), so landmark 263 (R) lands on the
+  // screen-left and 33 (L) on the screen-right. Measure the eye line from
+  // screen-left to screen-right, otherwise roll comes out ~180° and every
+  // overlay is drawn upside down.
+  const roll = Math.atan2(L.y - R.y, L.x - R.x);
   const midCheekX = (cheekL.x + cheekR.x) / 2;
   const yaw = Math.atan2(nose.x - midCheekX, faceWidth) * 1.2;
   const pitch = Math.atan2(bridge.y - eyeMid.y, eyeSpan) * 0.8;
 
-  // Crown / top of head estimate (above forehead landmark)
+  // Crown / top of head estimate: above forehead along the head's "up" axis
+  const up = { x: Math.sin(roll), y: -Math.cos(roll) };
   const crown = {
-    x: forehead.x + Math.sin(roll) * faceHeight * 0.08,
-    y: forehead.y - faceHeight * 0.28,
+    x: forehead.x + up.x * faceHeight * 0.28,
+    y: forehead.y + up.y * faceHeight * 0.28,
   };
+  const faceOval = FACE_OVAL.map((i) => pt(landmarks, i, w, h));
 
   return {
     cx,
@@ -710,6 +723,8 @@ function facePose(landmarks, w, h) {
     faceWidth,
     faceHeight,
     crown,
+    up,
+    faceOval,
   };
 }
 
@@ -1000,99 +1015,168 @@ function drawFlowerCrown(c, pose) {
   c.restore();
 }
 
-/** Shared veil geometry; perspective=true skews with yaw/roll */
+/** Offscreen layer for the veil, so the face can be cut out (veil stays behind the face) */
+let veilLayer = null;
+
+function getVeilLayer(c) {
+  if (!veilLayer) veilLayer = document.createElement("canvas");
+  if (veilLayer.width !== c.canvas.width || veilLayer.height !== c.canvas.height) {
+    veilLayer.width = c.canvas.width;
+    veilLayer.height = c.canvas.height;
+  }
+  const v = veilLayer.getContext("2d");
+  v.setTransform(1, 0, 0, 1, 0, 0);
+  v.clearRect(0, 0, veilLayer.width, veilLayer.height);
+  v.setTransform(c.getTransform());
+  return v;
+}
+
+/**
+ * Shared veil geometry: anchored on the crown (top of head), falls DOWN along
+ * both sides of the face and behind the shoulders. Rotates with roll, scales
+ * with face size; perspective=true also reacts to yaw (Welon 3D).
+ */
 function drawVeilBase(c, pose, perspective) {
-  const {
-    crown,
-    forehead,
-    templeL,
-    templeR,
-    cheekL,
-    cheekR,
-    chin,
-    faceWidth,
-    faceHeight,
-    roll,
-    yaw,
-  } = pose;
+  const { crown, faceOval, faceWidth: fw, faceHeight: fh, roll, yaw } = pose;
 
-  const cx = crown.x;
-  const cy = crown.y;
-  const yawS = Math.sin(yaw);
-  const leftScale = perspective ? 1 - yawS * 0.35 : 1;
-  const rightScale = perspective ? 1 + yawS * 0.35 : 1;
-  const skewX = perspective ? yawS * faceWidth * 0.12 : 0;
-  const hang = faceHeight * (perspective ? 1.35 : 1.15);
+  const yawS = perspective ? Math.max(-0.8, Math.min(0.8, Math.sin(yaw))) : 0;
+  // yaw > 0: face turned towards screen-right -> more of the back of the head
+  // (and the veil) visible on the screen-left side, less on the right.
+  const ls = 1 + yawS * 0.45;
+  const rs = 1 - yawS * 0.45;
+  const shiftX = -yawS * fw * 0.14; // anchor slightly behind the head
+  const hang = fh * (perspective ? 2.45 : 2.3);
+  const topW = fw * 0.34;
 
-  c.save();
-  c.translate(cx + skewX, cy);
-  c.rotate(roll * (perspective ? 1.05 : 0.9));
+  const v = getVeilLayer(c);
+  v.save();
+  v.translate(crown.x, crown.y);
+  v.rotate(roll);
+  v.translate(shiftX, 0);
+  if (perspective) v.transform(1, 0, -yawS * 0.12, 1, 0, 0); // hem swings back
 
-  // soft translucent panels left / right / center back
-  const leftEdge = -faceWidth * 0.72 * leftScale;
-  const rightEdge = faceWidth * 0.72 * rightScale;
-  const midDrop = hang * 0.55;
+  // silhouette: crown -> outer edges down past the shoulders -> scalloped hem
+  const silhouette = () => {
+    v.beginPath();
+    v.moveTo(-topW * ls, fh * 0.02);
+    v.bezierCurveTo(
+      -fw * 0.66 * ls, fh * 0.12,
+      -fw * 0.78 * ls, fh * 0.9,
+      -fw * 1.2 * ls, hang
+    );
+    const n = 8;
+    for (let i = 0; i < n; i++) {
+      const x0 = -fw * 1.2 * ls + ((i + 0.5) / n) * fw * 1.2 * (ls + rs);
+      const x1 = -fw * 1.2 * ls + ((i + 1) / n) * fw * 1.2 * (ls + rs);
+      v.quadraticCurveTo(x0, hang + fh * 0.07, x1, hang);
+    }
+    v.bezierCurveTo(
+      fw * 0.78 * rs, fh * 0.9,
+      fw * 0.66 * rs, fh * 0.12,
+      topW * rs, fh * 0.02
+    );
+    v.quadraticCurveTo(0, -fh * 0.1, -topW * ls, fh * 0.02);
+    v.closePath();
+  };
 
-  const veilGrad = c.createLinearGradient(0, 0, 0, hang);
-  veilGrad.addColorStop(0, "rgba(255, 252, 250, 0.72)");
-  veilGrad.addColorStop(0.35, "rgba(255, 252, 250, 0.38)");
-  veilGrad.addColorStop(1, "rgba(245, 214, 222, 0.08)");
+  const grad = v.createLinearGradient(0, 0, 0, hang);
+  grad.addColorStop(0, "rgba(255, 252, 250, 0.55)");
+  grad.addColorStop(0.3, "rgba(255, 252, 250, 0.4)");
+  grad.addColorStop(0.75, "rgba(250, 236, 238, 0.28)");
+  grad.addColorStop(1, "rgba(245, 214, 222, 0.18)");
+  silhouette();
+  v.fillStyle = grad;
+  v.fill();
 
-  // left panel
-  c.beginPath();
-  c.moveTo(-faceWidth * 0.08, 0);
-  c.quadraticCurveTo(leftEdge * 0.4, hang * 0.15, leftEdge, hang * 0.85);
-  c.quadraticCurveTo(leftEdge * 0.7, hang, -faceWidth * 0.05, midDrop);
-  c.closePath();
-  c.fillStyle = veilGrad;
-  c.fill();
+  // soft tulle folds
+  v.save();
+  silhouette();
+  v.clip();
+  v.strokeStyle = "rgba(255, 255, 255, 0.13)";
+  v.lineWidth = Math.max(1, fw * 0.012);
+  for (const t of [-1.05, -0.85, -0.6, 0.6, 0.85, 1.05]) {
+    const side = t < 0 ? ls : rs;
+    v.beginPath();
+    v.moveTo(t * topW * 0.8 * side, fh * 0.05);
+    v.quadraticCurveTo(t * fw * 0.7 * side, fh * 0.9, t * fw * 1.05 * side, hang);
+    v.stroke();
+  }
+  v.restore();
 
-  // right panel
-  c.beginPath();
-  c.moveTo(faceWidth * 0.08, 0);
-  c.quadraticCurveTo(rightEdge * 0.4, hang * 0.15, rightEdge, hang * 0.85);
-  c.quadraticCurveTo(rightEdge * 0.7, hang, faceWidth * 0.05, midDrop);
-  c.closePath();
-  c.fillStyle = veilGrad;
-  c.fill();
-
-  // crown cap
-  c.beginPath();
-  c.moveTo(leftEdge * 0.35, faceHeight * 0.05);
-  c.quadraticCurveTo(0, -faceHeight * 0.12, rightEdge * 0.35, faceHeight * 0.05);
-  c.quadraticCurveTo(0, faceHeight * 0.08, leftEdge * 0.35, faceHeight * 0.05);
-  c.fillStyle = "rgba(255, 252, 250, 0.55)";
-  c.fill();
-
-  // delicate gold edge
-  c.strokeStyle = "rgba(201, 162, 74, 0.45)";
-  c.lineWidth = Math.max(1, faceWidth * 0.01);
-  c.beginPath();
-  c.moveTo(leftEdge * 0.9, hang * 0.7);
-  c.quadraticCurveTo(0, -faceHeight * 0.08, rightEdge * 0.9, hang * 0.7);
-  c.stroke();
-
-  // tiny sparkles along edge
-  c.fillStyle = "rgba(232, 213, 163, 0.7)";
-  for (let i = -3; i <= 3; i++) {
-    if (i === 0) continue;
-    const t = i / 3.5;
-    const sx = t * faceWidth * 0.55 * (t < 0 ? leftScale : rightScale);
-    const sy = Math.abs(t) * hang * 0.35;
-    c.beginPath();
-    c.arc(sx, sy, Math.max(1.2, faceWidth * 0.012), 0, Math.PI * 2);
-    c.fill();
+  // delicate gold hem + sparkles
+  v.strokeStyle = "rgba(201, 162, 74, 0.5)";
+  v.lineWidth = Math.max(1, fw * 0.01);
+  silhouette();
+  v.stroke();
+  v.fillStyle = "rgba(232, 213, 163, 0.75)";
+  for (let i = 0; i <= 10; i++) {
+    const x = -fw * 1.15 * ls + (i / 10) * fw * 1.15 * (ls + rs);
+    v.beginPath();
+    v.arc(x, hang - fh * 0.06, Math.max(1.2, fw * 0.012), 0, Math.PI * 2);
+    v.fill();
   }
 
-  c.restore();
+  // neck / chest stays in front of the veil (soft-edged cut-out)
+  v.globalCompositeOperation = "destination-out";
+  const nw = fw * 0.62;
+  const neckGrad = v.createLinearGradient(-nw, 0, nw, 0);
+  neckGrad.addColorStop(0, "rgba(0,0,0,0)");
+  neckGrad.addColorStop(0.25, "rgba(0,0,0,1)");
+  neckGrad.addColorStop(0.75, "rgba(0,0,0,1)");
+  neckGrad.addColorStop(1, "rgba(0,0,0,0)");
+  v.beginPath();
+  v.moveTo(-fw * 0.45, fh * 1.0);
+  v.lineTo(fw * 0.45, fh * 1.0);
+  v.lineTo(nw, hang + fh * 0.2);
+  v.lineTo(-nw, hang + fh * 0.2);
+  v.closePath();
+  v.fillStyle = neckGrad;
+  v.fill();
+  // hair / top of the head in front of the veil (veil hangs from behind the crown)
+  v.beginPath();
+  v.ellipse(-shiftX * 0.5, fh * 0.28, fw * 0.47, fh * 0.3, 0, 0, Math.PI * 2);
+  v.fillStyle = "rgba(0,0,0,0.85)";
+  v.fill();
+  v.restore();
 
-  // slight face-side soft wash (keeps face readable)
-  void forehead;
-  void templeL;
-  void templeR;
-  void cheekL;
-  void cheekR;
-  void chin;
+  // the face itself stays fully visible (veil is behind the face)
+  if (faceOval && faceOval.length) {
+    v.save();
+    v.globalCompositeOperation = "destination-out";
+    v.beginPath();
+    faceOval.forEach((p, i) => (i ? v.lineTo(p.x, p.y) : v.moveTo(p.x, p.y)));
+    v.closePath();
+    v.fillStyle = "#000";
+    v.fill();
+    v.lineJoin = "round";
+    v.strokeStyle = "rgba(0,0,0,0.6)";
+    v.lineWidth = Math.max(2, fw * 0.05);
+    v.stroke();
+    v.restore();
+  }
+
+  // pearl comb on the crown (on top of hair, drawn after cut-out)
+  v.save();
+  v.translate(crown.x, crown.y);
+  v.rotate(roll);
+  v.translate(shiftX, 0);
+  const pr = Math.max(1.5, fw * 0.022);
+  for (let i = -4; i <= 4; i++) {
+    const t = i / 4;
+    v.beginPath();
+    v.arc(t * topW * 0.85 * (t < 0 ? ls : rs), fh * 0.02 - (1 - t * t) * fh * 0.05, pr, 0, Math.PI * 2);
+    v.fillStyle = "rgba(255, 252, 250, 0.95)";
+    v.fill();
+    v.strokeStyle = "rgba(201, 162, 74, 0.8)";
+    v.lineWidth = Math.max(0.8, fw * 0.005);
+    v.stroke();
+  }
+  v.restore();
+
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.drawImage(veilLayer, 0, 0);
+  c.restore();
 }
 
 function drawSimpleVeil(c, pose) {
@@ -1245,6 +1329,7 @@ function drawCaption(c, pose) {
 function drawBouquet(c, pose) {
   const {
     cheekL,
+    cheekR,
     jawL,
     chin,
     faceWidth,
@@ -1256,8 +1341,10 @@ function drawBouquet(c, pose) {
   // Estimate left shoulder: below/left of jaw, scaled by face size
   // In mirrored selfie, "left" on screen is viewer's left (= person's right physically),
   // but users expect bouquet on the side of the frame that feels natural for selfie.
-  // Prefer screen-left (cheekL after mirror).
-  const shoulderX = cheekL.x - faceWidth * 0.35 + Math.sin(yaw) * faceWidth * 0.1;
+  // Prefer screen-left. After the mirror landmark 234 (cheekL) is on the
+  // screen-RIGHT, so pick whichever cheek really is on the left of the frame.
+  const cheekLeft = cheekL.x <= cheekR.x ? cheekL : cheekR;
+  const shoulderX = cheekLeft.x - faceWidth * 0.05 + Math.sin(yaw) * faceWidth * 0.1;
   const shoulderY = chin.y + faceHeight * 0.35 + Math.cos(roll) * faceWidth * 0.02;
   const s = faceWidth * 0.55;
 
