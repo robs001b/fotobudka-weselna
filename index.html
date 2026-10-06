@@ -858,11 +858,23 @@ function drawGoldGlasses(c, pose) {
   c.restore();
 }
 
+/** Heart-shaped lens outline centred at (x, y); w/h = full width/height */
+function heartLensPath(c, x, y, w, h) {
+  c.beginPath();
+  c.moveTo(x, y + h * 0.5);
+  c.bezierCurveTo(x - w * 0.12, y + h * 0.36, x - w * 0.5, y + h * 0.12, x - w * 0.5, y - h * 0.16);
+  c.bezierCurveTo(x - w * 0.5, y - h * 0.46, x - w * 0.14, y - h * 0.58, x, y - h * 0.27);
+  c.bezierCurveTo(x + w * 0.14, y - h * 0.58, x + w * 0.5, y - h * 0.46, x + w * 0.5, y - h * 0.16);
+  c.bezierCurveTo(x + w * 0.5, y + h * 0.12, x + w * 0.12, y + h * 0.36, x, y + h * 0.5);
+  c.closePath();
+}
+
 function drawHeartGlasses(c, pose) {
-  const { cx, cy, width, height, roll, yaw } = pose;
-  const lensW = width * 0.27;
-  const lensH = height * 0.4;
-  const gap = width * 0.09;
+  const { cx, cy, width, roll, yaw } = pose;
+  const lensW = width * 0.52; // full width of one heart lens
+  const lensH = lensW * 0.88;
+  const off = width * 0.335; // lens centre distance from the bridge
+  const ly = lensH * 0.06; // eye line ~ widest part of the heart
   const skew = Math.sin(yaw) * width * 0.04;
 
   c.save();
@@ -870,67 +882,69 @@ function drawHeartGlasses(c, pose) {
   c.rotate(roll);
   c.scale(1 + Math.sin(yaw) * 0.08, 1);
 
+  // temples
   c.strokeStyle = "#7A1F2B";
-  c.lineWidth = Math.max(2.2, width * 0.02);
+  c.lineWidth = Math.max(2.2, width * 0.022);
   c.lineCap = "round";
   c.beginPath();
-  c.moveTo(-gap - lensW * 2 + skew, 0);
-  c.lineTo(-width * 0.5 + skew * 1.4, -lensH * 0.25);
-  c.moveTo(gap + lensW * 2 + skew, 0);
-  c.lineTo(width * 0.5 + skew * 1.4, -lensH * 0.25);
+  c.moveTo(-off - lensW * 0.5 + skew, ly - lensH * 0.16);
+  c.lineTo(-width * 0.62 + skew * 1.4, ly - lensH * 0.3);
+  c.moveTo(off + lensW * 0.5 + skew, ly - lensH * 0.16);
+  c.lineTo(width * 0.62 + skew * 1.4, ly - lensH * 0.3);
   c.stroke();
 
-  drawHeartPath(c, 0, -lensH * 0.55, Math.max(10, width * 0.07));
-  c.fillStyle = "#7A1F2B";
-  c.fill();
+  // bridge
+  c.lineWidth = Math.max(2.4, width * 0.026);
+  c.beginPath();
+  c.moveTo(-off + lensW * 0.36 + skew * 0.3, ly - lensH * 0.2);
+  c.quadraticCurveTo(skew * 0.3, ly - lensH * 0.42, off - lensW * 0.36 + skew * 0.3, ly - lensH * 0.2);
+  c.stroke();
 
   const lenses = [
-    { x: -gap - lensW + skew, label: "D" },
-    { x: gap + lensW + skew, label: "R" },
+    { x: -off + skew, label: "D" },
+    { x: off + skew, label: "R" },
   ];
 
   for (const lens of lenses) {
     const grad = c.createRadialGradient(
-      lens.x - lensW * 0.15,
-      -lensH * 0.25,
-      1,
-      lens.x,
-      0,
-      lensW * 1.35
+      lens.x - lensW * 0.15, ly - lensH * 0.2, 1,
+      lens.x, ly, lensW * 0.7
     );
-    grad.addColorStop(0, "rgba(245, 214, 222, 0.45)");
-    grad.addColorStop(0.5, "rgba(232, 164, 180, 0.22)");
-    grad.addColorStop(1, "rgba(122, 31, 43, 0.18)");
-
-    drawRoundedLens(c, lens.x, 0, lensW, lensH);
+    grad.addColorStop(0, "rgba(255, 228, 236, 0.42)");
+    grad.addColorStop(0.55, "rgba(232, 164, 180, 0.32)");
+    grad.addColorStop(1, "rgba(212, 137, 154, 0.38)");
+    heartLensPath(c, lens.x, ly, lensW, lensH);
     c.fillStyle = grad;
     c.fill();
 
     c.strokeStyle = "#7A1F2B";
-    c.lineWidth = Math.max(2.8, width * 0.024);
+    c.lineJoin = "round";
+    c.lineWidth = Math.max(3, width * 0.032);
     c.stroke();
-    c.strokeStyle = "#E8A4B4";
-    c.lineWidth = Math.max(1.2, width * 0.01);
-    drawRoundedLens(c, lens.x, 0, lensW * 0.9, lensH * 0.88);
+    c.strokeStyle = "rgba(245, 214, 222, 0.85)";
+    c.lineWidth = Math.max(1, width * 0.009);
+    heartLensPath(c, lens.x, ly + lensH * 0.01, lensW * 0.86, lensH * 0.86);
     c.stroke();
 
-    const hx = lens.x + (lens.x < 0 ? -lensW * 0.85 : lensW * 0.85);
-    drawHeartPath(c, hx, -lensH * 0.85, Math.max(6, width * 0.035));
-    c.fillStyle = "#922A38";
-    c.fill();
-
-    c.fillStyle = "rgba(92, 21, 32, 0.85)";
-    c.font = `600 ${Math.round(lensH * 0.9)}px "Cormorant Garamond", serif`;
+    // letter (canvas is not mirrored for overlays, so text reads normally)
+    c.font = `700 ${Math.round(lensH * 0.42)}px "Cormorant Garamond", serif`;
     c.textAlign = "center";
     c.textBaseline = "middle";
-    c.fillText(lens.label, lens.x, lensH * 0.06);
+    c.lineWidth = Math.max(1.5, width * 0.012);
+    c.strokeStyle = "rgba(255, 245, 248, 0.7)";
+    c.strokeText(lens.label, lens.x, ly - lensH * 0.02);
+    c.fillStyle = "rgba(92, 21, 32, 0.9)";
+    c.fillText(lens.label, lens.x, ly - lensH * 0.02);
   }
 
-  c.fillStyle = "#5C1520";
-  c.font = `700 ${Math.round(height * 0.2)}px "Work Sans", sans-serif`;
-  c.textAlign = "center";
-  c.textBaseline = "middle";
-  c.fillText("D♥R", 0, lensH * 0.95);
+  // small heart on the bridge
+  const hs = Math.max(9, width * 0.085);
+  drawHeartPath(c, skew * 0.3, ly - lensH * 0.31 - hs * 0.32, hs);
+  c.fillStyle = "#922A38";
+  c.fill();
+  c.strokeStyle = "#E8D5A3";
+  c.lineWidth = Math.max(0.8, width * 0.005);
+  c.stroke();
 
   c.restore();
 }
@@ -1079,11 +1093,15 @@ function drawVeilBase(c, pose, perspective) {
     v.closePath();
   };
 
-  const grad = v.createLinearGradient(0, 0, 0, hang);
-  grad.addColorStop(0, "rgba(255, 252, 250, 0.55)");
-  grad.addColorStop(0.3, "rgba(255, 252, 250, 0.4)");
-  grad.addColorStop(0.75, "rgba(250, 236, 238, 0.28)");
-  grad.addColorStop(1, "rgba(245, 214, 222, 0.18)");
+  // milky-white tulle: more opaque at the edges, slightly lighter in the middle
+  const grad = v.createLinearGradient(-fw * 1.2 * ls, 0, fw * 1.2 * rs, 0);
+  grad.addColorStop(0, "rgba(253, 251, 249, 0.6)");
+  grad.addColorStop(0.2, "rgba(253, 251, 249, 0.56)");
+  grad.addColorStop(0.38, "rgba(253, 251, 249, 0.46)");
+  grad.addColorStop(0.5, "rgba(253, 251, 249, 0.42)");
+  grad.addColorStop(0.62, "rgba(253, 251, 249, 0.46)");
+  grad.addColorStop(0.8, "rgba(253, 251, 249, 0.56)");
+  grad.addColorStop(1, "rgba(253, 251, 249, 0.6)");
   silhouette();
   v.fillStyle = grad;
   v.fill();
@@ -1092,7 +1110,7 @@ function drawVeilBase(c, pose, perspective) {
   v.save();
   silhouette();
   v.clip();
-  v.strokeStyle = "rgba(255, 255, 255, 0.13)";
+  v.strokeStyle = "rgba(255, 255, 255, 0.3)";
   v.lineWidth = Math.max(1, fw * 0.012);
   for (const t of [-1.05, -0.85, -0.6, 0.6, 0.85, 1.05]) {
     const side = t < 0 ? ls : rs;
@@ -1103,8 +1121,52 @@ function drawVeilBase(c, pose, perspective) {
   }
   v.restore();
 
+  // lace border: small scallops + dots along the outer edges and the hem
+  const cubic = (p0, p1, p2, p3, t) => {
+    const u = 1 - t;
+    return {
+      x: u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
+      y: u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1],
+    };
+  };
+  const lacePts = [];
+  for (const side of [-1, 1]) {
+    const k = side < 0 ? ls : rs;
+    const e = [
+      [side * topW * k, fh * 0.02],
+      [side * fw * 0.66 * k, fh * 0.12],
+      [side * fw * 0.78 * k, fh * 0.9],
+      [side * fw * 1.2 * k, hang],
+    ];
+    for (let i = 2; i <= 40; i++) {
+      const a = cubic(...e, i / 40);
+      const b = cubic(...e, Math.min(1, (i + 0.5) / 40));
+      const nx = -(b.y - a.y) * side, ny = (b.x - a.x) * side;
+      const nl = Math.hypot(nx, ny) || 1;
+      lacePts.push({ x: a.x, y: a.y, nx: nx / nl, ny: ny / nl });
+    }
+  }
+  for (let i = 0; i <= 24; i++) {
+    const x = -fw * 1.2 * ls + (i / 24) * fw * 1.2 * (ls + rs);
+    lacePts.push({ x, y: hang + fh * 0.03, nx: 0, ny: -1 });
+  }
+  const lr = Math.max(1.6, fw * 0.022);
+  v.lineWidth = Math.max(0.8, fw * 0.006);
+  for (const q of lacePts) {
+    v.beginPath();
+    v.arc(q.x, q.y, lr, 0, Math.PI * 2);
+    v.fillStyle = "rgba(255, 255, 255, 0.55)";
+    v.fill();
+    v.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    v.stroke();
+    v.beginPath();
+    v.arc(q.x + q.nx * lr * 2.4, q.y + q.ny * lr * 2.4, lr * 0.38, 0, Math.PI * 2);
+    v.fillStyle = "rgba(255, 255, 255, 0.85)";
+    v.fill();
+  }
+
   // delicate gold hem + sparkles
-  v.strokeStyle = "rgba(201, 162, 74, 0.5)";
+  v.strokeStyle = "rgba(201, 162, 74, 0.35)";
   v.lineWidth = Math.max(1, fw * 0.01);
   silhouette();
   v.stroke();
@@ -1137,6 +1199,9 @@ function drawVeilBase(c, pose, perspective) {
   v.ellipse(-shiftX * 0.5, fh * 0.28, fw * 0.47, fh * 0.3, 0, 0, Math.PI * 2);
   v.fillStyle = "rgba(0,0,0,0.85)";
   v.fill();
+  v.strokeStyle = "rgba(0,0,0,0.3)";
+  v.lineWidth = fw * 0.07;
+  v.stroke();
   v.restore();
 
   // the face itself stays fully visible (veil is behind the face)
@@ -1148,10 +1213,13 @@ function drawVeilBase(c, pose, perspective) {
     v.closePath();
     v.fillStyle = "#000";
     v.fill();
+    // soft edge: stacked strokes fade the veil out towards the face contour
     v.lineJoin = "round";
-    v.strokeStyle = "rgba(0,0,0,0.6)";
-    v.lineWidth = Math.max(2, fw * 0.05);
-    v.stroke();
+    for (const [lw, a] of [[0.13, 0.18], [0.09, 0.25], [0.055, 0.35], [0.025, 0.6]]) {
+      v.strokeStyle = `rgba(0,0,0,${a})`;
+      v.lineWidth = Math.max(2, fw * lw);
+      v.stroke();
+    }
     v.restore();
   }
 
@@ -1239,39 +1307,98 @@ function drawBowTie(c, pose) {
 }
 
 /** 4. Dymek „Tak!” above head */
-function drawSpeechBubble(c, pose) {
-  const { crown, faceWidth, roll, yaw } = pose;
-  const bw = faceWidth * 0.55;
-  const bh = faceWidth * 0.28;
-  const bx = crown.x + Math.sin(yaw) * faceWidth * 0.05;
-  const by = crown.y - faceWidth * 0.22;
+function drawSpeechBubble(c, pose, sideMode = false) {
+  const { crown, faceWidth, faceHeight, roll, yaw, up, viewW, viewH } = pose;
+  let bw = faceWidth * 0.55;
+  let bh = faceWidth * 0.28;
+  let bx = crown.x + Math.sin(yaw) * faceWidth * 0.05;
+  let by = crown.y - faceWidth * 0.22;
+  let tail = null; // tail tip in bubble-local coords
+
+  if (sideMode && viewW && viewH) {
+    // Caption / veil / crown occupy the space above the head: move the bubble
+    // to the side (above the shoulder, beside the top of the head).
+    const m = Math.max(6, faceWidth * 0.04);
+    const right = { x: Math.cos(roll), y: Math.sin(roll) };
+    const along = faceWidth * 0.5 + bw * 0.5 + faceWidth * 0.06;
+    const down = faceHeight * 0.2;
+    const place = (side) => ({
+      x: crown.x + right.x * along * side - up.x * down,
+      y: crown.y + right.y * along * side - up.y * down,
+    });
+    const fits = (p) => p.x - bw / 2 >= m && p.x + bw / 2 <= viewW - m;
+    let side = crown.x < viewW / 2 ? 1 : -1; // side with more room first
+    let p = place(side);
+    if (!fits(p) && fits(place(-side))) {
+      side = -side;
+      p = place(side);
+    }
+    if (!fits(p)) {
+      // shrink a little in close-ups, then clamp to the frame
+      const room = side > 0 ? viewW - m - (crown.x + faceWidth * 0.5) : crown.x - faceWidth * 0.5 - m;
+      const k = Math.max(0.72, Math.min(1, room / bw));
+      bw *= k;
+      bh *= k;
+    }
+    bx = Math.min(viewW - m - bw / 2, Math.max(m + bw / 2, p.x));
+    by = Math.min(viewH - m - bh / 2, Math.max(m + bh / 2, p.y));
+    // tail points towards the head / mouth side
+    const target = {
+      x: crown.x - up.x * faceHeight * 0.55,
+      y: crown.y - up.y * faceHeight * 0.55,
+    };
+    const dx = target.x - bx;
+    const dy = target.y - by;
+    const d = Math.hypot(dx, dy) || 1;
+    tail = { x: (dx / d) * (bw * 0.5 + faceWidth * 0.08), y: (dy / d) * (bh * 0.5 + faceWidth * 0.08) };
+  }
 
   c.save();
   c.translate(bx, by);
-  c.rotate(roll * 0.25);
+  c.rotate(sideMode ? 0 : roll * 0.25);
+
+  // tail (drawn first, body covers its base)
+  const tailPts = tail
+    ? (() => {
+        const base = { x: tail.x * 0.35, y: tail.y * 0.35 };
+        const nx = -tail.y, ny = tail.x;
+        const nl = Math.hypot(nx, ny) || 1;
+        const half = bh * 0.22;
+        return [
+          { x: base.x + (nx / nl) * half, y: base.y + (ny / nl) * half },
+          tail,
+          { x: base.x - (nx / nl) * half, y: base.y - (ny / nl) * half },
+        ];
+      })()
+    : [
+        { x: -bw * 0.08, y: bh / 2 - 1 },
+        { x: 0, y: bh / 2 + faceWidth * 0.1 },
+        { x: bw * 0.12, y: bh / 2 - 1 },
+      ];
+  const tailPath = () => {
+    c.beginPath();
+    c.moveTo(tailPts[0].x, tailPts[0].y);
+    c.lineTo(tailPts[1].x, tailPts[1].y);
+    c.lineTo(tailPts[2].x, tailPts[2].y);
+  };
+  c.lineWidth = Math.max(2, faceWidth * 0.014);
+  c.strokeStyle = "#7A1F2B";
+  tailPath();
+  c.closePath();
+  c.fillStyle = "rgba(255, 252, 250, 0.94)";
+  c.fill();
+  tailPath();
+  c.stroke();
 
   // bubble body
   roundRectPath(c, -bw / 2, -bh / 2, bw, bh, bh * 0.35);
   c.fillStyle = "rgba(255, 252, 250, 0.94)";
   c.fill();
-  c.strokeStyle = "#7A1F2B";
-  c.lineWidth = Math.max(2, faceWidth * 0.014);
   c.stroke();
-
-  // tail pointing down toward head
-  c.beginPath();
-  c.moveTo(-bw * 0.08, bh / 2 - 1);
-  c.lineTo(0, bh / 2 + faceWidth * 0.1);
-  c.lineTo(bw * 0.12, bh / 2 - 1);
+  // hide the tail's inner stroke where it joins the body
+  tailPath();
   c.closePath();
-  c.fillStyle = "rgba(255, 252, 250, 0.94)";
   c.fill();
-  c.strokeStyle = "#7A1F2B";
-  c.beginPath();
-  c.moveTo(-bw * 0.08, bh / 2 - 1);
-  c.lineTo(0, bh / 2 + faceWidth * 0.1);
-  c.lineTo(bw * 0.12, bh / 2 - 1);
-  c.stroke();
 
   c.fillStyle = "#7A1F2B";
   c.font = `700 ${Math.round(bh * 0.55)}px "Work Sans", sans-serif`;
@@ -1344,13 +1471,29 @@ function drawBouquet(c, pose) {
   // Prefer screen-left. After the mirror landmark 234 (cheekL) is on the
   // screen-RIGHT, so pick whichever cheek really is on the left of the frame.
   const cheekLeft = cheekL.x <= cheekR.x ? cheekL : cheekR;
-  const shoulderX = cheekLeft.x - faceWidth * 0.05 + Math.sin(yaw) * faceWidth * 0.1;
-  const shoulderY = chin.y + faceHeight * 0.35 + Math.cos(roll) * faceWidth * 0.02;
-  const s = faceWidth * 0.55;
+  let shoulderX = cheekLeft.x - faceWidth * 0.22 + Math.sin(yaw) * faceWidth * 0.1;
+  let shoulderY = chin.y + faceHeight * 0.35 + Math.cos(roll) * faceWidth * 0.02;
+  const s = faceWidth * 0.72;
+  const angle = roll * 0.4 - 0.35 + Math.sin(yaw) * 0.15;
+
+  // keep the whole bouquet inside the frame (clamp its rotated bounding box)
+  if (pose.viewW && pose.viewH) {
+    const m = Math.max(8, faceWidth * 0.05);
+    const ca = Math.cos(angle), sa = Math.sin(angle);
+    const xs = [], ys = [];
+    for (const [lx, ly] of [[-0.42, -0.72], [0.42, -0.72], [0.42, 0.6], [-0.42, 0.6]]) {
+      xs.push((lx * ca - ly * sa) * s);
+      ys.push((lx * sa + ly * ca) * s);
+    }
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    shoulderX = Math.min(pose.viewW - m - maxX, Math.max(m - minX, shoulderX));
+    shoulderY = Math.min(pose.viewH - m - maxY, Math.max(m - minY, shoulderY));
+  }
 
   c.save();
   c.translate(shoulderX, shoulderY);
-  c.rotate(roll * 0.4 - 0.35 + Math.sin(yaw) * 0.15);
+  c.rotate(angle);
   c.scale(1 + Math.sin(yaw) * 0.06, 1);
 
   // stems
@@ -1453,6 +1596,8 @@ function drawFrame(landmarks) {
       z: p.z,
     }));
     const pose = facePose(mappedRaw, w, h);
+    pose.viewW = w;
+    pose.viewH = h;
     const matYaw = yawFromMatrix(lastMatrix);
     if (matYaw != null && Number.isFinite(matYaw)) {
       // Blend landmark yaw with matrix yaw (mirrored selfie: invert)
@@ -1479,7 +1624,12 @@ function drawFrame(landmarks) {
     }
 
     if (showBubble) {
-      drawSpeechBubble(ctx, pose);
+      const busyAbove =
+        accessoryStyle === "caption" ||
+        accessoryStyle === "veil" ||
+        accessoryStyle === "veil3d" ||
+        accessoryStyle === "crown";
+      drawSpeechBubble(ctx, pose, busyAbove);
     }
   }
 
