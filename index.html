@@ -382,6 +382,9 @@ body {
         <button type="button" class="style-btn accessory-btn" data-accessory="caption" aria-pressed="false">
           Napis z datą
         </button>
+        <button type="button" class="style-btn accessory-btn" data-accessory="pair" aria-pressed="false" title="Osoba po lewej: welon, osoba po prawej: muszka">
+          Para
+        </button>
       </div>
 
       <p class="picker-label" id="lbl-extra">Dodatkowo</p>
@@ -428,6 +431,11 @@ const CDN_WASM =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm";
 const CDN_MODEL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+
+/** Up to 2 people in the frame (couple mode) */
+const MAX_FACES = 2;
+/** Longest side of the frame passed to MediaPipe (smaller = faster on phones) */
+const DETECT_MAX_SIDE = 640;
 
 /** MediaPipe Face Mesh indices */
 const LM = {
@@ -485,9 +493,9 @@ let stream = null;
 let rafId = 0;
 let lastVideoTime = -1;
 let glassesStyle = "gold"; // gold | heart | none
-let accessoryStyle = "none"; // none | crown | veil | veil3d | bowtie | bouquet | caption
+let accessoryStyle = "none"; // none | crown | veil | veil3d | bowtie | bouquet | caption | pair
 let showBubble = false;
-let lastLandmarks = null;
+let lastLandmarks = null; // array of faces (up to MAX_FACES) or null
 let lastMatrix = null;
 let running = false;
 
@@ -507,7 +515,7 @@ async function createLandmarker(wasmPath, modelPath) {
   const vision = await FilesetResolver.forVisionTasks(wasmPath);
   const base = {
     runningMode: "VIDEO",
-    numFaces: 1,
+    numFaces: MAX_FACES,
     outputFaceBlendshapes: false,
     outputFacialTransformationMatrixes: true,
   };
@@ -1205,11 +1213,13 @@ function drawVeilBase(c, pose, perspective) {
   v.restore();
 
   // the face itself stays fully visible (veil is behind the face)
-  if (faceOval && faceOval.length) {
+  // every visible face (also the other person's) stays in front of the veil
+  for (const oval of pose.allOvals || [faceOval]) {
+    if (!oval || !oval.length) continue;
     v.save();
     v.globalCompositeOperation = "destination-out";
     v.beginPath();
-    faceOval.forEach((p, i) => (i ? v.lineTo(p.x, p.y) : v.moveTo(p.x, p.y)));
+    oval.forEach((p, i) => (i ? v.lineTo(p.x, p.y) : v.moveTo(p.x, p.y)));
     v.closePath();
     v.fillStyle = "#000";
     v.fill();
@@ -1307,7 +1317,7 @@ function drawBowTie(c, pose) {
 }
 
 /** 4. Dymek „Tak!” above head */
-function drawSpeechBubble(c, pose, sideMode = false) {
+function drawSpeechBubble(c, pose, sideMode = false, forceSide = 0) {
   const { crown, faceWidth, faceHeight, roll, yaw, up, viewW, viewH } = pose;
   let bw = faceWidth * 0.55;
   let bh = faceWidth * 0.28;
@@ -1327,9 +1337,9 @@ function drawSpeechBubble(c, pose, sideMode = false) {
       y: crown.y + right.y * along * side - up.y * down,
     });
     const fits = (p) => p.x - bw / 2 >= m && p.x + bw / 2 <= viewW - m;
-    let side = crown.x < viewW / 2 ? 1 : -1; // side with more room first
+    let side = forceSide || (crown.x < viewW / 2 ? 1 : -1); // side with more room first
     let p = place(side);
-    if (!fits(p) && fits(place(-side))) {
+    if (!forceSide && !fits(p) && fits(place(-side))) {
       side = -side;
       p = place(side);
     }
@@ -1568,7 +1578,49 @@ function drawAccessory(c, pose, style) {
   }
 }
 
-function drawFrame(landmarks) {
+let detectCanvas = null;
+
+function detectionSource() {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const long = Math.max(vw, vh);
+  if (!long || long <= DETECT_MAX_SIDE) return video;
+  const k = DETECT_MAX_SIDE / long;
+  if (!detectCanvas) detectCanvas = document.createElement("canvas");
+  const tw = Math.round(vw * k);
+  const th = Math.round(vh * k);
+  if (detectCanvas.width !== tw || detectCanvas.height !== th) {
+    detectCanvas.width = tw;
+    detectCanvas.height = th;
+  }
+  detectCanvas.getContext("2d").drawImage(video, 0, 0, tw, th);
+  return detectCanvas;
+}
+
+/** Pose spanning all faces - for overlays drawn once per frame (caption, bubble) */
+function groupPose(poses, w, h) {
+  if (poses.length === 1) return poses[0];
+  const n = poses.length;
+  const fw = poses.reduce((a, p) => a + p.faceWidth, 0) / n;
+  const fh = poses.reduce((a, p) => a + p.faceHeight, 0) / n;
+  const roll = poses.reduce((a, p) => a + p.roll, 0) / n;
+  const m = Math.max(8, fw * 0.05);
+  let x = poses.reduce((a, p) => a + p.crown.x, 0) / n;
+  let y = Math.min(...poses.map((p) => p.crown.y)) - fw * 0.08;
+  x = Math.min(w - m - fw * 0.55, Math.max(m + fw * 0.55, x));
+  y = Math.max(m + fw * 0.34, y);
+  return {
+    ...poses[0],
+    crown: { x, y },
+    faceWidth: fw,
+    faceHeight: fh,
+    roll,
+    yaw: 0,
+    up: { x: Math.sin(roll), y: -Math.cos(roll) },
+  };
+}
+
+function drawFrame(faces) {
   const wrap = stage.parentElement;
   const w = wrap.clientWidth;
   const h = wrap.clientHeight;
@@ -1589,38 +1641,59 @@ function drawFrame(landmarks) {
   ctx.drawImage(video, dx, dy, dw, dh);
   ctx.restore();
 
-  if (landmarks) {
-    const mappedRaw = landmarks.map((p) => ({
-      x: (dx + p.x * vw * scale) / w,
-      y: (dy + p.y * vh * scale) / h,
-      z: p.z,
-    }));
-    const pose = facePose(mappedRaw, w, h);
-    pose.viewW = w;
-    pose.viewH = h;
-    const matYaw = yawFromMatrix(lastMatrix);
-    if (matYaw != null && Number.isFinite(matYaw)) {
-      // Blend landmark yaw with matrix yaw (mirrored selfie: invert)
-      pose.yaw = pose.yaw * 0.35 + (-matYaw) * 0.65;
+  if (faces && faces.length) {
+    const poses = faces.map((landmarks, i) => {
+      const mappedRaw = landmarks.map((p) => ({
+        x: (dx + p.x * vw * scale) / w,
+        y: (dy + p.y * vh * scale) / h,
+        z: p.z,
+      }));
+      const pose = facePose(mappedRaw, w, h);
+      pose.viewW = w;
+      pose.viewH = h;
+      const matYaw = yawFromMatrix(lastMatrix?.[i]);
+      if (matYaw != null && Number.isFinite(matYaw)) {
+        // Blend landmark yaw with matrix yaw (mirrored selfie: invert)
+        pose.yaw = pose.yaw * 0.35 + (-matYaw) * 0.65;
+      }
+      return pose;
+    });
+    // screen-left person first
+    poses.sort((a, b) => a.eyeMid.x - b.eyeMid.x);
+    const allOvals = poses.map((p) => p.faceOval);
+    poses.forEach((p) => (p.allOvals = allOvals));
+
+    // Accessory per person: "pair" = veil (screen-left) + bow tie (screen-right);
+    // bouquet only once (screen-left); caption is drawn once for the whole frame.
+    const styleFor = (i) => {
+      if (accessoryStyle === "pair") return i === 0 ? "veil" : "bowtie";
+      if (accessoryStyle === "bouquet") return i === 0 ? "bouquet" : "none";
+      if (accessoryStyle === "caption") return "none";
+      return accessoryStyle;
+    };
+    const isBehind = (s) => s === "veil" || s === "veil3d" || s === "bouquet";
+
+    // Draw order: veil (behind feel) → bouquet → glasses → crown/bow → caption → bubble
+    poses.forEach((pose, i) => {
+      if (isBehind(styleFor(i))) drawAccessory(ctx, pose, styleFor(i));
+    });
+
+    for (const pose of poses) {
+      if (glassesStyle === "gold") {
+        drawGoldGlasses(ctx, glassesPoseFromFace(pose));
+      } else if (glassesStyle === "heart") {
+        drawHeartGlasses(ctx, glassesPoseFromFace(pose));
+      }
     }
 
-    // Draw order: veil (behind feel) → bouquet → glasses → crown/bow/caption → bubble
-    const behindFirst =
-      accessoryStyle === "veil" ||
-      accessoryStyle === "veil3d" ||
-      accessoryStyle === "bouquet";
-    if (behindFirst) {
-      drawAccessory(ctx, pose, accessoryStyle);
-    }
+    poses.forEach((pose, i) => {
+      const s = styleFor(i);
+      if (!isBehind(s) && s !== "none") drawAccessory(ctx, pose, s);
+    });
 
-    if (glassesStyle === "gold") {
-      drawGoldGlasses(ctx, glassesPoseFromFace(pose));
-    } else if (glassesStyle === "heart") {
-      drawHeartGlasses(ctx, glassesPoseFromFace(pose));
-    }
-
-    if (!behindFirst && accessoryStyle !== "none") {
-      drawAccessory(ctx, pose, accessoryStyle);
+    const group = groupPose(poses, w, h);
+    if (accessoryStyle === "caption") {
+      drawCaption(ctx, group);
     }
 
     if (showBubble) {
@@ -1628,8 +1701,19 @@ function drawFrame(landmarks) {
         accessoryStyle === "caption" ||
         accessoryStyle === "veil" ||
         accessoryStyle === "veil3d" ||
-        accessoryStyle === "crown";
-      drawSpeechBubble(ctx, pose, busyAbove);
+        accessoryStyle === "crown" ||
+        accessoryStyle === "pair";
+      if (poses.length > 1 && busyAbove) {
+        // beside the outer side of the person with more free space
+        const first = poses[0];
+        const last = poses[poses.length - 1];
+        const roomL = first.crown.x - first.faceWidth * 0.5;
+        const roomR = w - (last.crown.x + last.faceWidth * 0.5);
+        if (roomL > roomR) drawSpeechBubble(ctx, first, true, -1);
+        else drawSpeechBubble(ctx, last, true, 1);
+      } else {
+        drawSpeechBubble(ctx, group, busyAbove);
+      }
     }
   }
 
@@ -1661,13 +1745,12 @@ function loop() {
   lastVideoTime = video.currentTime;
 
   try {
-    const result = faceLandmarker.detectForVideo(video, now);
+    const result = faceLandmarker.detectForVideo(detectionSource(), now);
     lastLandmarks =
-      result?.faceLandmarks?.length > 0 ? result.faceLandmarks[0] : null;
-    lastMatrix =
-      result?.facialTransformationMatrixes?.length > 0
-        ? result.facialTransformationMatrixes[0]
+      result?.faceLandmarks?.length > 0
+        ? result.faceLandmarks.slice(0, MAX_FACES)
         : null;
+    lastMatrix = result?.facialTransformationMatrixes?.slice(0, MAX_FACES) || null;
     if (lastLandmarks && statusEl.textContent.includes("szukam")) {
       setStatus("");
     }
