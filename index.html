@@ -326,6 +326,108 @@ body {
   .stage-wrap { max-height: min(68vh, 640px); }
 }
 
+/* Wysyłka zdjęć do pary młodej */
+.send-panel {
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--ivory);
+  border: 1.5px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.send-panel[hidden] { display: none; }
+
+.send-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.send-title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.send-thumbs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.send-thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 54px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid var(--sand-deep);
+  background: #1a1012;
+}
+
+.send-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.send-thumb[data-state="sent"]::after {
+  content: "✓";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(168, 184, 154, 0.95);
+  color: #2a3324;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-thumb[data-state="error"] { border-color: var(--bordo); }
+
+.send-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sand);
+  overflow: hidden;
+}
+
+.send-bar[hidden] { display: none; }
+
+.send-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blush-deep), var(--bordo));
+  transition: width 0.25s ease;
+}
+
+.send-status {
+  margin: 0;
+  font-size: 0.82rem;
+  text-align: center;
+  color: var(--charcoal);
+  min-height: 1.1em;
+}
+
+.send-status.ok { color: #4f6a42; font-weight: 600; }
+.send-status.error { color: var(--bordo); font-weight: 600; }
+
+.btn-send { width: 100%; }
+
   </style>
 </head>
 <body>
@@ -348,10 +450,10 @@ body {
     <section class="controls" aria-label="Sterowanie">
       <p class="picker-label" id="lbl-glasses">Okulary</p>
       <div class="style-row style-row-3" role="group" aria-labelledby="lbl-glasses">
-        <button type="button" class="style-btn glasses-btn" data-glasses="gold" aria-pressed="true">
+        <button type="button" class="style-btn glasses-btn" data-glasses="gold" aria-pressed="false">
           Złote D&amp;R
         </button>
-        <button type="button" class="style-btn glasses-btn" data-glasses="heart" aria-pressed="false">
+        <button type="button" class="style-btn glasses-btn" data-glasses="heart" aria-pressed="true">
           Serca D♥R
         </button>
         <button type="button" class="style-btn glasses-btn" data-glasses="none" aria-pressed="false">
@@ -403,9 +505,22 @@ body {
         </button>
       </div>
 
+      <section class="send-panel" id="sendPanel" hidden aria-label="Wysyłka zdjęć do pary młodej">
+        <div class="send-head">
+          <span class="send-title">Zdjęcia z tej sesji</span>
+          <span class="send-count" id="sendCount"></span>
+        </div>
+        <div class="send-thumbs" id="sendThumbs"></div>
+        <div class="send-bar" id="sendBar" hidden><div class="send-fill" id="sendFill"></div></div>
+        <p class="send-status" id="sendStatus" role="status" aria-live="polite"></p>
+        <button type="button" class="btn btn-primary btn-send" id="btn-send">
+          Wyślij parze młodej
+        </button>
+      </section>
+
       <p class="hint">
         Ustaw twarz na wprost, w dobrym świetle. Możesz łączyć okulary z dodatkiem i dymkiem.
-        Zdjęcie zapisuje się jako JPG na urządzeniu (bez wysyłki).
+        Zdjęcie zapisuje się jako JPG na urządzeniu. Przyciskiem „Wyślij parze młodej” prześlesz je do wspólnego albumu.
       </p>
     </section>
 
@@ -492,7 +607,7 @@ let faceLandmarker = null;
 let stream = null;
 let rafId = 0;
 let lastVideoTime = -1;
-let glassesStyle = "gold"; // gold | heart | none
+let glassesStyle = "heart"; // gold | heart | none
 let accessoryStyle = "none"; // none | crown | veil | veil3d | bowtie | bouquet | caption | pair
 let showBubble = false;
 let lastLandmarks = null; // array of faces (up to MAX_FACES) or null
@@ -1760,7 +1875,241 @@ function loop() {
   drawFrame(lastLandmarks);
 }
 
-function captureJpeg() {
+/* ---------- Wysyłka do pary młodej (ten sam Apps Script co strona główna) ---------- */
+const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbz6wfMc69E_2CbCLZoJ4HB52jNOZyrJTKXi36Hh6yJi1u5DXliYIeBH_e2guoZDUlMQ/exec";
+const UPLOAD_TOKEN = "wesele2026";
+const JPEG_QUALITY = 0.9;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // limit Code.gs (MAX_IMAGE_SIZE_MB)
+const MAX_BATCH_BYTES = 12 * 1024 * 1024; // surowe bajty na jedno wywołanie (base64 +33%)
+const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000;
+const AUTO_RETRIES = 1;
+
+const sendPanel = $("#sendPanel");
+const sendThumbs = $("#sendThumbs");
+const sendCount = $("#sendCount");
+const sendBar = $("#sendBar");
+const sendFill = $("#sendFill");
+const sendStatus = $("#sendStatus");
+const btnSend = $("#btn-send");
+
+/** @type {{blob: Blob, name: string, url: string, state: string, batchId: string|null, el: HTMLElement}[]} */
+const sessionShots = [];
+let sending = false;
+
+function makeBatchId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "b" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+}
+
+function canvasToJpeg(quality) {
+  return new Promise((resolve) => stage.toBlob(resolve, "image/jpeg", quality));
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1]);
+    r.onerror = () => reject(r.error || new Error("Nie udało się odczytać zdjęcia"));
+    r.readAsDataURL(blob);
+  });
+}
+
+function setSendStatus(text, kind = "") {
+  sendStatus.textContent = text;
+  sendStatus.className = "send-status" + (kind ? ` ${kind}` : "");
+}
+
+function setSendProgress(pct) {
+  if (pct == null) {
+    sendBar.hidden = true;
+    return;
+  }
+  sendBar.hidden = false;
+  sendFill.style.width = Math.max(0, Math.min(100, pct)).toFixed(0) + "%";
+}
+
+function pendingShots() {
+  return sessionShots.filter((s) => s.state !== "sent");
+}
+
+function plural(n) {
+  if (n === 1) return "zdjęcie";
+  const d = n % 10, t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? "zdjęcia" : "zdjęć";
+}
+
+function refreshSendUi() {
+  sendPanel.hidden = sessionShots.length === 0;
+  const pending = pendingShots().length;
+  const sent = sessionShots.length - pending;
+  sendCount.textContent =
+    `${sessionShots.length} ${plural(sessionShots.length)}` + (sent ? ` · wysłane: ${sent}` : "");
+  btnSend.disabled = sending || pending === 0;
+  btnSend.textContent = sending
+    ? "Wysyłanie…"
+    : pending === 0
+      ? "Wszystko wysłane ✓"
+      : pendingShots().some((s) => s.state === "error")
+        ? `Ponów wysyłkę (${pending})`
+        : pending > 1
+          ? `Wyślij parze młodej (${pending})`
+          : "Wyślij parze młodej";
+}
+
+function addSessionShot(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const el = document.createElement("div");
+  el.className = "send-thumb";
+  el.dataset.state = "pending";
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = "Zdjęcie z fotobudki";
+  el.appendChild(img);
+  sendThumbs.appendChild(el);
+  sessionShots.push({ blob, name, url, state: "pending", batchId: null, el });
+  setSendStatus("Zdjęcie gotowe - możesz je wysłać parze młodej.");
+  setSendProgress(null);
+  refreshSendUi();
+  el.scrollIntoView?.({ block: "nearest", inline: "end" });
+}
+
+function makeBatches(shots) {
+  const batches = [];
+  let cur = [];
+  let size = 0;
+  for (const s of shots) {
+    if (cur.length && size + s.blob.size > MAX_BATCH_BYTES) {
+      batches.push(cur);
+      cur = [];
+      size = 0;
+    }
+    cur.push(s);
+    size += s.blob.size;
+  }
+  if (cur.length) batches.push(cur);
+  return batches;
+}
+
+/** One POST (text/plain = bez preflight CORS), ten sam format co strona główna */
+async function postBatch(shots, batchId, onTick) {
+  const files = [];
+  for (const s of shots) {
+    files.push({
+      filename: "fotobudka__" + s.name,
+      mimeType: "image/jpeg",
+      data: await blobToBase64(s.blob),
+    });
+  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+  // fetch nie daje postępu wysyłania - pasek rośnie szacunkowo, 100% po odpowiedzi
+  const bytes = shots.reduce((a, s) => a + s.blob.size, 0);
+  const expectedMs = 2500 + (bytes / (300 * 1024)) * 1000; // ~300 kB/s
+  const t0 = performance.now();
+  const tick = setInterval(() => {
+    const f = (performance.now() - t0) / expectedMs;
+    onTick(1 - Math.exp(-2 * f)); // asymptotycznie do 1
+  }, 200);
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      signal: controller.signal,
+      body: JSON.stringify({ token: UPLOAD_TOKEN, batchId, files }),
+    });
+    const json = await res.json();
+    if (json?.status !== "ok" || !Array.isArray(json.results)) {
+      throw new Error(json?.message || "Serwer odrzucił wysyłkę");
+    }
+    return json.results;
+  } finally {
+    clearInterval(tick);
+    clearTimeout(timeoutId);
+  }
+}
+
+async function sendPending() {
+  if (sending) return;
+  const pending = pendingShots();
+  if (!pending.length) return;
+  sending = true;
+  refreshSendUi();
+  const batches = makeBatches(pending);
+  const total = pending.reduce((a, s) => a + s.blob.size, 0);
+  let doneBytes = 0;
+  let failed = 0;
+  setSendProgress(2);
+
+  for (const batch of batches) {
+    // ten sam batchId przy ponowieniu = brak duplikatów na Dysku (CacheService w Code.gs)
+    const batchId = batch[0].batchId || makeBatchId();
+    batch.forEach((s) => {
+      s.batchId = batchId;
+      s.state = "sending";
+      s.el.dataset.state = "sending";
+    });
+    const batchBytes = batch.reduce((a, s) => a + s.blob.size, 0);
+    let ok = false;
+    for (let attempt = 0; attempt <= AUTO_RETRIES && !ok; attempt++) {
+      setSendStatus(
+        attempt
+          ? "Chwilowy problem - ponawiam wysyłkę…"
+          : `Wysyłanie ${pending.length} ${plural(pending.length)}…`
+      );
+      try {
+        const results = await postBatch(batch, batchId, (f) =>
+          setSendProgress(((doneBytes + batchBytes * f * 0.95) / total) * 100)
+        );
+        batch.forEach((s, i) => {
+          const r = results[i];
+          if (r && r.status === "ok") {
+            s.state = "sent";
+            s.el.dataset.state = "sent";
+          } else {
+            s.state = "error";
+            s.el.dataset.state = "error";
+            failed++;
+          }
+        });
+        ok = true;
+      } catch (e) {
+        console.warn("Wysyłka nieudana:", e);
+        if (attempt < AUTO_RETRIES) await new Promise((r) => setTimeout(r, 2500));
+      }
+    }
+    if (!ok) {
+      batch.forEach((s) => {
+        s.state = "error";
+        s.el.dataset.state = "error";
+      });
+      failed += batch.length;
+    }
+    doneBytes += batchBytes;
+    setSendProgress((doneBytes / total) * 100);
+  }
+
+  sending = false;
+  if (failed) {
+    setSendProgress(null);
+    setSendStatus(
+      navigator.onLine === false
+        ? "Brak połączenia z internetem. Zdjęcia są zapisane w telefonie - spróbuj ponownie."
+        : `Nie udało się wysłać: ${failed} ${plural(failed)}. Spróbuj ponownie.`,
+      "error"
+    );
+  } else {
+    setSendProgress(100);
+    setSendStatus("Wysłane! Zdjęcia trafiły do albumu pary młodej ♥", "ok");
+  }
+  refreshSendUi();
+}
+
+btnSend.addEventListener("click", () => sendPending());
+
+async function captureJpeg() {
   if (!video.videoWidth) return;
   drawFrame(lastLandmarks);
 
@@ -1770,29 +2119,30 @@ function captureJpeg() {
   };
   flash();
 
-  stage.toBlob(
-    (blob) => {
-      if (!blob) {
-        setStatus("Nie udało się zapisać zdjęcia.", "error");
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const stamp = new Date();
-      const pad = (n) => String(n).padStart(2, "0");
-      const name = `wesele-D-R-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.jpg`;
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      setStatus("Zapisano JPG ✓", "ok");
-      setTimeout(() => setStatus(""), 2000);
-    },
-    "image/jpeg",
-    0.92
-  );
+  let blob = await canvasToJpeg(JPEG_QUALITY);
+  if (blob && blob.size > MAX_IMAGE_BYTES) blob = await canvasToJpeg(0.8);
+  if (!blob) {
+    setStatus("Nie udało się zapisać zdjęcia.", "error");
+    return;
+  }
+  const stamp = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const name = `wesele-D-R-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.jpg`;
+
+  // zapis lokalny (jak dotąd)
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setStatus("Zapisano JPG ✓", "ok");
+  setTimeout(() => setStatus(""), 2000);
+
+  // do wysyłki parze młodej
+  addSessionShot(blob, name);
 }
 
 function setGlasses(style) {
@@ -1873,7 +2223,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-setGlasses("gold");
+setGlasses("heart");
 setAccessory("none");
 setBubble(false);
 boot();
