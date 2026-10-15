@@ -481,6 +481,7 @@ body {
   .back-link-wrap{text-align:center;margin:0 0 10px;}
   .back-link-btn{display:inline-block;text-decoration:none;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:500;padding:11px 22px;border-radius:999px;border:1.5px solid rgba(122,31,43,0.35);background:linear-gradient(180deg,#fff 0%,var(--blush-soft,#F5D6DE) 100%);color:var(--bordo,#7A1F2B);white-space:nowrap;transition:transform .12s ease,box-shadow .15s ease;-webkit-tap-highlight-color:transparent;}
   .back-link-btn:hover,.back-link-btn:focus-visible{transform:translateY(-1px);box-shadow:0 4px 12px rgba(122,31,43,0.14);outline:none;}
+.action-row-top{margin:12px 0}
 </style>
 </head>
 <body>
@@ -609,6 +610,15 @@ body {
       </div>
     </section>
 
+    <div class="action-row action-row-top">
+        <button type="button" class="btn btn-secondary" id="btn-restart">
+          Kamera
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-capture" disabled>
+          Zrób zdjęcie
+        </button>
+      </div>
+
     <section class="controls" aria-label="Sterowanie">
       <p class="picker-label" id="lbl-glasses">Okulary</p>
       <div class="style-row style-row-3" role="group" aria-labelledby="lbl-glasses">
@@ -658,14 +668,6 @@ body {
         </button>
       </div>
 
-      <div class="action-row">
-        <button type="button" class="btn btn-secondary" id="btn-restart">
-          Kamera
-        </button>
-        <button type="button" class="btn btn-primary" id="btn-capture" disabled>
-          Zrób zdjęcie
-        </button>
-      </div>
 
       <section class="send-panel" id="sendPanel" hidden aria-label="Wysyłka zdjęć do pary młodej">
         <div class="send-head">
