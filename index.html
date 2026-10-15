@@ -897,6 +897,15 @@
     .page-botanicals .b-pampas-r { display: none; }
   }
 </style>
+<style id="guest-card-css">
+.guest-card{max-width:440px;margin:18px auto 8px;padding:14px 16px;border:1px solid var(--line,#EEDFE2);border-radius:16px;background:var(--ivory,#FFFCFA);box-shadow:0 4px 14px rgba(122,31,43,.08);text-align:center;font-family:inherit;color:var(--charcoal,#3D2E32)}
+.guest-card[hidden]{display:none!important}
+.guest-card h3{margin:0 0 4px;font-size:1rem;color:var(--bordo,#7A1F2B);font-weight:600}
+.guest-card p{margin:0 0 10px;font-size:.85rem;color:var(--muted,#8A757A)}
+.guest-card .gc-row{display:flex;gap:8px}
+.guest-card input{flex:1;min-width:0;min-height:44px;padding:0 12px;border:1px solid var(--sand-deep,#DCC4C0);border-radius:12px;font:inherit;font-size:16px;background:#fff;color:inherit}
+.guest-card button{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:var(--bordo,#7A1F2B);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+</style>
 </head>
 <body>
 <!-- Soft SVG botanicals (eucalyptus / dried leaves / pampas) — no photo rectangles -->
@@ -1161,6 +1170,29 @@
     </div>
   </div>
 
+<section class="guest-card" id="guestCard" hidden aria-label="Podaj swoje imię">
+  <h3>Podaj swoje imię</h3>
+  <p>Dodamy je do nazw Twoich zdjęć - para młoda będzie wiedziała, od kogo są.</p>
+  <form class="gc-row" id="guestCardForm" autocomplete="on">
+    <input id="guestCardInput" type="text" name="given-name" maxlength="40" placeholder="np. Ania Nowak" autocomplete="given-name">
+    <button type="submit">Zapisz</button>
+  </form>
+</section>
+<script>
+(function(){
+  var card=document.getElementById('guestCard'),form=document.getElementById('guestCardForm'),inp=document.getElementById('guestCardInput');
+  function get(){try{return localStorage.getItem('wesele_guest_name')||'';}catch(e){return '';}}
+  function clean(n){return String(n||'').trim().replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_').slice(0,30);}
+  function sync(){card.hidden=!!get();}
+  window.weseleGuestCardSync=sync;
+  form.addEventListener('submit',function(e){e.preventDefault();var c=clean(inp.value);if(!c){inp.focus();return;}
+    try{localStorage.setItem('wesele_guest_name',c);}catch(err){}
+    var o=document.getElementById('guestNameInput');if(o&&!o.value)o.value=inp.value.trim();
+    inp.blur();sync();});
+  window.addEventListener('storage',sync);window.addEventListener('pageshow',sync);
+  sync();
+})();
+</script>
   <footer>
     <details>
       <summary>Informacja o danych</summary>
@@ -1967,6 +1999,7 @@
     if (clean) {
       try { localStorage.setItem('wesele_guest_name', clean); } catch (e) {}
     }
+    if (window.weseleGuestCardSync) window.weseleGuestCardSync();
     try { localStorage.setItem('wesele_instrukcja_widziana', '1'); }
     catch (e) { /* storage niedostępne w tym środowisku, trudno, pokaże się znowu */ }
   }
