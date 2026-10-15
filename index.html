@@ -2225,14 +2225,15 @@ async function sendPending() {
         const results = await postBatch(batch, batchId, (f) =>
           setSendProgress(((doneBytes + batchBytes * f * 0.95) / total) * 100)
         );
-        batch.forEach((s, i) => {
-          const r = results[i];
+        batch.forEach((s) => {
+          const r = results.find((x) => x && String(x.filename || "") === "fotobudka__" + s.name);
           if (r && r.status === "ok") {
             s.state = "sent";
             s.el.dataset.state = "sent";
           } else {
             s.state = "error";
             s.el.dataset.state = "error";
+            s.batchId = null; // serwer odpowiedział błędem -> ponowienie z nowym batchId
             failed++;
           }
         });
