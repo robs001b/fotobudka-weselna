@@ -484,13 +484,13 @@ body {
 .action-row-top{margin:12px 0}
 </style>
 <style id="guest-card-css">
-.guest-card{max-width:440px;margin:18px auto 8px;padding:14px 16px;border:1px solid var(--line,#EEDFE2);border-radius:16px;background:var(--ivory,#FFFCFA);box-shadow:0 4px 14px rgba(122,31,43,.08);text-align:center;font-family:inherit;color:var(--charcoal,#3D2E32)}
+.guest-card{max-width:440px;margin:14px auto 6px;padding:0 12px;text-align:center;font-family:inherit;color:var(--muted,#8A757A)}
 .guest-card[hidden]{display:none!important}
-.guest-card h3{margin:0 0 4px;font-size:1rem;color:var(--bordo,#7A1F2B);font-weight:600}
-.guest-card p{margin:0 0 10px;font-size:.85rem;color:var(--muted,#8A757A)}
-.guest-card .gc-row{display:flex;gap:8px}
-.guest-card input{flex:1;min-width:0;min-height:44px;padding:0 12px;border:1px solid var(--sand-deep,#DCC4C0);border-radius:12px;font:inherit;font-size:16px;background:#fff;color:inherit}
-.guest-card button{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:var(--bordo,#7A1F2B);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.guest-card .gc-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin:0}
+.guest-card label{flex-basis:100%;white-space:nowrap;font-size:.74rem;color:var(--muted,#8A757A);opacity:.9}
+.guest-card input{width:9.5em;min-width:0;height:30px;padding:0 8px;border:1px solid var(--line,#EEDFE2);border-radius:8px;font:inherit;font-size:16px;background:transparent;color:var(--charcoal,#3D2E32)}
+.guest-card input::placeholder{color:#B9A9AD}
+.guest-card button{height:30px;padding:0 10px;border:1px solid var(--line,#EEDFE2);border-radius:8px;background:transparent;color:var(--muted,#8A757A);font:inherit;font-size:.78rem;cursor:pointer}
 </style>
 </head>
 <body>
@@ -697,11 +697,10 @@ body {
       </p>
     </section>
 
-    <section class="guest-card" id="guestCard" hidden aria-label="Podaj swoje imię">
-  <h3>Podaj swoje imię</h3>
-  <p>Dodamy je do nazw Twoich zdjęć - para młoda będzie wiedziała, od kogo są.</p>
+    <section class="guest-card" id="guestCard" hidden aria-label="Imię do podpisu zdjęć (nieobowiązkowe)">
   <form class="gc-row" id="guestCardForm" autocomplete="on">
-    <input id="guestCardInput" type="text" name="given-name" maxlength="40" placeholder="np. Ania Nowak" autocomplete="given-name">
+    <label for="guestCardInput">Chcesz podpisać zdjęcia imieniem? (nieobowiązkowe)</label>
+    <input id="guestCardInput" type="text" name="given-name" maxlength="40" placeholder="Imię" autocomplete="given-name">
     <button type="submit">Zapisz</button>
   </form>
 </section>
