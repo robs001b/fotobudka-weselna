@@ -429,6 +429,29 @@ body {
 .btn-send { width: 100%; }
 .btn-send[hidden] { display: none; }
 
+button.send-thumb { padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button.send-thumb:active { transform: scale(0.96); }
+.dl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: -4px;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.dl-all {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--bordo);
+  font: inherit;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.dl-all:active { background: var(--blush-soft, #f6e3e6); }
+
 .upload-chip {
   margin: -2px auto 0;
   font-size: 0.78rem;
@@ -729,6 +752,10 @@ body {
           <span class="send-count" id="sendCount"></span>
         </div>
         <div class="send-thumbs" id="sendThumbs"></div>
+        <div class="dl-row">
+          <span class="dl-hint">Stuknij zdjęcie, aby pobrać</span>
+          <button type="button" class="dl-all" id="btn-download-all">Pobierz wszystkie</button>
+        </div>
         <div class="send-bar" id="sendBar" hidden><div class="send-fill" id="sendFill"></div></div>
         <p class="send-status" id="sendStatus" role="status" aria-live="polite"></p>
         <button type="button" class="btn btn-secondary btn-send" id="btn-send" hidden>
@@ -738,7 +765,7 @@ body {
 
       <p class="hint">
         Ustaw twarz na wprost, w dobrym świetle. Możesz łączyć okulary z dodatkiem i dymkiem.
-        Zdjęcie zapisuje się jako JPG na urządzeniu i od razu samo wysyła się do wspólnego albumu pary młodej.
+        Zdjęcie samo wysyła się do wspólnego albumu pary młodej. Możesz je też pobrać na telefon - stuknij miniaturkę.
       </p>
     </section>
 
@@ -2267,19 +2294,40 @@ function uniqueName(name) {
 
 function addSessionShot(blob, name) {
   const url = URL.createObjectURL(blob);
-  const el = document.createElement("div");
+  const el = document.createElement("button");
+  el.type = "button";
   el.className = "send-thumb";
   el.dataset.state = "pending";
+  el.title = "Pobierz na telefon";
+  el.setAttribute("aria-label", "Pobierz zdjęcie na telefon");
   const img = document.createElement("img");
   img.src = url;
-  img.alt = "Zdjęcie z fotobudki";
+  img.alt = "";
   el.appendChild(img);
+  el.addEventListener("click", () => downloadShot(url, name));
   sendThumbs.appendChild(el);
   // batchId nadany od razu i trzymany do skutku - każde ponowienie tego zdjęcia ma ten sam
   sessionShots.push({ blob, name, url, state: "pending", batchId: makeBatchId(), tries: 0, el });
   el.scrollIntoView?.({ block: "nearest", inline: "end" });
   kickUploads();
 }
+
+/** Pobranie na telefon - tylko na życzenie gościa */
+function downloadShot(url, name) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+$("#btn-download-all").addEventListener("click", async () => {
+  for (const s of sessionShots) {
+    downloadShot(s.url, s.name);
+    await new Promise((r) => setTimeout(r, 400));
+  }
+});
 
 /** Jedno POST (text/plain = bez preflight CORS), ten sam format co strona główna */
 async function postShot(s) {
@@ -2394,16 +2442,9 @@ async function captureJpeg() {
   try { guest = (localStorage.getItem("wesele_guest_name") || "").normalize("NFC").replace(/[\\/:*?"<>|\x00-\x1f]+/g, "").replace(/\s+/g, "_").replace(/_+/g, "_").replace(/^[._]+|[._]+$/g, "").slice(0, 40); } catch (e) {}
   const name = uniqueName((guest ? guest + "__" : "") + `wesele-D-R-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.jpg`);
 
-  // zapis lokalny (jak dotąd)
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  setStatus("Zapisano JPG ✓", "ok");
+  // bez automatycznego pobierania (Android pokazywał okno "Pobierz / Anuluj");
+  // pobranie na telefon jest opcją: stuknięcie miniaturki albo "Pobierz wszystkie"
+  setStatus("Zdjęcie zrobione ✓", "ok");
   setTimeout(() => setStatus(""), 2000);
 
   // do wysyłki parze młodej - startuje automatycznie w tle
