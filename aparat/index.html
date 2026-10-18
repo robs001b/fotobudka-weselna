@@ -427,6 +427,50 @@ body {
 .send-status.error { color: var(--bordo); font-weight: 600; }
 
 .btn-send { width: 100%; }
+.btn-send[hidden] { display: none; }
+
+.upload-chip {
+  margin: -2px auto 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  min-height: 1.1em;
+}
+.upload-chip[hidden] { display: none; }
+.upload-chip.busy::before {
+  content: "";
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.4em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.05em;
+  animation: chipSpin 0.8s linear infinite;
+}
+@keyframes chipSpin { to { transform: rotate(360deg); } }
+.upload-chip.ok { color: var(--soft-green-deep, #4f6a42); font-weight: 600; }
+.upload-chip.error { color: var(--bordo); font-weight: 600; }
+
+.send-thumb[data-state="sending"] img,
+.send-thumb[data-state="pending"] img { opacity: 0.6; }
+.send-thumb[data-state="error"]::after {
+  content: "!";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bordo);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 
 /* ===== Motyw ze strony głównej (zdjecia-wesele.pl) - v5 ===== */
@@ -627,6 +671,7 @@ body {
           Zrób zdjęcie
         </button>
       </div>
+    <p class="upload-chip" id="uploadChip" hidden role="status" aria-live="polite"></p>
 
     <section class="controls" aria-label="Sterowanie">
       <p class="picker-label" id="lbl-glasses">Okulary</p>
@@ -686,14 +731,14 @@ body {
         <div class="send-thumbs" id="sendThumbs"></div>
         <div class="send-bar" id="sendBar" hidden><div class="send-fill" id="sendFill"></div></div>
         <p class="send-status" id="sendStatus" role="status" aria-live="polite"></p>
-        <button type="button" class="btn btn-primary btn-send" id="btn-send">
-          Wyślij parze młodej
+        <button type="button" class="btn btn-secondary btn-send" id="btn-send" hidden>
+          Ponów teraz
         </button>
       </section>
 
       <p class="hint">
         Ustaw twarz na wprost, w dobrym świetle. Możesz łączyć okulary z dodatkiem i dymkiem.
-        Zdjęcie zapisuje się jako JPG na urządzeniu. Przyciskiem „Wyślij parze młodej” prześlesz je do wspólnego albumu.
+        Zdjęcie zapisuje się jako JPG na urządzeniu i od razu samo wysyła się do wspólnego albumu pary młodej.
       </p>
     </section>
 
@@ -2097,7 +2142,10 @@ const JPEG_QUALITY = 0.9;
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // limit Code.gs (MAX_IMAGE_SIZE_MB)
 const MAX_BATCH_BYTES = 12 * 1024 * 1024; // surowe bajty na jedno wywołanie (base64 +33%)
 const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000;
-const AUTO_RETRIES = 1;
+// Automatyczna wysyłka w tle: każde zdjęcie = osobne wywołanie ze stałym batchId.
+// Ponowienie z tym samym batchId po zgubionej odpowiedzi zwraca wynik z cache (Code.gs) - brak duplikatów.
+const UPLOAD_SHOT_TIMEOUT_MS = 90 * 1000;
+const RETRY_DELAYS_S = [3, 8, 20, 45, 60]; // potem co 60 s, bez limitu prób
 
 const sendPanel = $("#sendPanel");
 const sendThumbs = $("#sendThumbs");
@@ -2106,10 +2154,15 @@ const sendBar = $("#sendBar");
 const sendFill = $("#sendFill");
 const sendStatus = $("#sendStatus");
 const btnSend = $("#btn-send");
+const uploadChip = $("#uploadChip");
 
-/** @type {{blob: Blob, name: string, url: string, state: string, batchId: string|null, el: HTMLElement}[]} */
+/** @type {{blob: Blob, name: string, url: string, state: string, batchId: string|null, tries: number, el: HTMLElement}[]} */
 const sessionShots = [];
-let sending = false;
+let uploading = false;
+let retryTimer = null;
+let retryAt = 0;
+let countdownTimer = null;
+const usedNames = new Set();
 
 function makeBatchId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -2155,22 +2208,61 @@ function plural(n) {
   return d >= 2 && d <= 4 && (t < 12 || t > 14) ? "zdjęcia" : "zdjęć";
 }
 
+function setShotState(s, state) {
+  s.state = state;
+  s.el.dataset.state = state;
+}
+
+function setChip(text, kind) {
+  uploadChip.hidden = !text;
+  uploadChip.textContent = text;
+  uploadChip.className = "upload-chip" + (kind ? ` ${kind}` : "");
+}
+
 function refreshSendUi() {
   sendPanel.hidden = sessionShots.length === 0;
-  const pending = pendingShots().length;
-  const sent = sessionShots.length - pending;
+  const pending = pendingShots();
+  const sent = sessionShots.length - pending.length;
+  const errors = pending.filter((s) => s.state === "error").length;
   sendCount.textContent =
     `${sessionShots.length} ${plural(sessionShots.length)}` + (sent ? ` · wysłane: ${sent}` : "");
-  btnSend.disabled = sending || pending === 0;
-  btnSend.textContent = sending
-    ? "Wysyłanie…"
-    : pending === 0
-      ? "Wszystko wysłane ✓"
-      : pendingShots().some((s) => s.state === "error")
-        ? `Ponów wysyłkę (${pending})`
-        : pending > 1
-          ? `Wyślij parze młodej (${pending})`
-          : "Wyślij parze młodej";
+  // przycisk tylko awaryjnie: "Ponów teraz" gdy czekamy na kolejną próbę
+  btnSend.hidden = !(errors && !uploading);
+  btnSend.disabled = uploading;
+  btnSend.textContent = "Ponów teraz";
+
+  if (!sessionShots.length) {
+    setChip("", "");
+  } else if (uploading) {
+    setChip(`Wysyłanie… (${pending.length})`, "busy");
+    setSendStatus(`Wysyłanie ${pending.length} ${plural(pending.length)} do albumu pary młodej…`);
+  } else if (errors) {
+    const sec = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
+    const when = navigator.onLine === false ? "po powrocie internetu" : sec ? `za ${sec} s` : "za chwilę";
+    setChip(`Błąd - ponowię automatycznie ${when}`, "error");
+    setSendStatus(
+      navigator.onLine === false
+        ? "Brak internetu. Zdjęcia czekają w kolejce i wyślą się same."
+        : `Nie wysłano: ${errors} ${plural(errors)}. Ponowię automatycznie ${when}.`,
+      "error"
+    );
+  } else {
+    setChip("Wysłano ✓", "ok");
+    setSendStatus("Wysłane! Zdjęcia trafiły do albumu pary młodej ♥", "ok");
+  }
+}
+
+function uniqueName(name) {
+  if (!usedNames.has(name)) {
+    usedNames.add(name);
+    return name;
+  }
+  let i = 2;
+  const base = name.replace(/\.jpg$/i, "");
+  while (usedNames.has(`${base}-${i}.jpg`)) i++;
+  const n = `${base}-${i}.jpg`;
+  usedNames.add(n);
+  return n;
 }
 
 function addSessionShot(blob, name) {
@@ -2183,146 +2275,102 @@ function addSessionShot(blob, name) {
   img.alt = "Zdjęcie z fotobudki";
   el.appendChild(img);
   sendThumbs.appendChild(el);
-  sessionShots.push({ blob, name, url, state: "pending", batchId: null, el });
-  setSendStatus("Zdjęcie gotowe - możesz je wysłać parze młodej.");
-  setSendProgress(null);
-  refreshSendUi();
+  // batchId nadany od razu i trzymany do skutku - każde ponowienie tego zdjęcia ma ten sam
+  sessionShots.push({ blob, name, url, state: "pending", batchId: makeBatchId(), tries: 0, el });
   el.scrollIntoView?.({ block: "nearest", inline: "end" });
+  kickUploads();
 }
 
-function makeBatches(shots) {
-  const batches = [];
-  let cur = [];
-  let size = 0;
-  for (const s of shots) {
-    if (cur.length && size + s.blob.size > MAX_BATCH_BYTES) {
-      batches.push(cur);
-      cur = [];
-      size = 0;
-    }
-    cur.push(s);
-    size += s.blob.size;
-  }
-  if (cur.length) batches.push(cur);
-  return batches;
-}
-
-/** One POST (text/plain = bez preflight CORS), ten sam format co strona główna */
-async function postBatch(shots, batchId, onTick) {
-  const files = [];
-  for (const s of shots) {
-    files.push({
-      filename: "fotobudka__" + s.name,
-      mimeType: "image/jpeg",
-      data: await blobToBase64(s.blob),
-    });
-  }
+/** Jedno POST (text/plain = bez preflight CORS), ten sam format co strona główna */
+async function postShot(s) {
+  const files = [{
+    filename: "fotobudka__" + s.name,
+    mimeType: "image/jpeg",
+    data: await blobToBase64(s.blob),
+  }];
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
-  // fetch nie daje postępu wysyłania - pasek rośnie szacunkowo, 100% po odpowiedzi
-  const bytes = shots.reduce((a, s) => a + s.blob.size, 0);
-  const expectedMs = 2500 + (bytes / (300 * 1024)) * 1000; // ~300 kB/s
-  const t0 = performance.now();
-  const tick = setInterval(() => {
-    const f = (performance.now() - t0) / expectedMs;
-    onTick(1 - Math.exp(-2 * f)); // asymptotycznie do 1
-  }, 200);
+  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_SHOT_TIMEOUT_MS);
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       signal: controller.signal,
-      body: JSON.stringify({ token: UPLOAD_TOKEN, batchId, files }),
+      body: JSON.stringify({ token: UPLOAD_TOKEN, batchId: s.batchId, files }),
     });
     const json = await res.json();
     if (json?.status !== "ok" || !Array.isArray(json.results)) {
+      // błąd ogólny (np. blokada skryptu zajęta) - ponowienie z tym samym batchId jest bezpieczne
       throw new Error(json?.message || "Serwer odrzucił wysyłkę");
     }
-    return json.results;
+    const r = json.results.find((x) => x && String(x.filename || "") === "fotobudka__" + s.name);
+    if (!r || r.status !== "ok") {
+      // serwer odrzucił sam plik i nic nie zapisał (brak cache) - nowy batchId przy ponowieniu
+      s.batchId = makeBatchId();
+      throw new Error(r?.message || "Plik nie został zapisany");
+    }
   } finally {
-    clearInterval(tick);
     clearTimeout(timeoutId);
   }
 }
 
-async function sendPending() {
-  if (sending) return;
-  const pending = pendingShots();
-  if (!pending.length) return;
-  sending = true;
+function scheduleRetry() {
+  clearTimeout(retryTimer);
+  const failed = sessionShots.filter((s) => s.state === "error");
+  if (!failed.length) return;
+  const tries = Math.min(...failed.map((s) => s.tries));
+  const delay = RETRY_DELAYS_S[Math.min(tries - 1, RETRY_DELAYS_S.length - 1)] * 1000;
+  retryAt = Date.now() + delay;
+  retryTimer = setTimeout(() => kickUploads(true), delay);
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    if (uploading || !sessionShots.some((s) => s.state === "error")) {
+      clearInterval(countdownTimer);
+      return;
+    }
+    refreshSendUi();
+  }, 1000);
+}
+
+/** Kolejka: jedno zdjęcie naraz, w tle; robienie kolejnych zdjęć nie czeka na wysyłkę */
+async function kickUploads(includeErrors = false) {
+  if (includeErrors) {
+    clearTimeout(retryTimer);
+    clearInterval(countdownTimer);
+    // też w trakcie wysyłki: trwająca pętla podejmie te zdjęcia
+    sessionShots.forEach((s) => { if (s.state === "error") setShotState(s, "pending"); });
+  }
+  if (uploading) return;
+  uploading = true;
   refreshSendUi();
-  const batches = makeBatches(pending);
-  const total = pending.reduce((a, s) => a + s.blob.size, 0);
-  let doneBytes = 0;
-  let failed = 0;
-  setSendProgress(2);
-
-  for (const batch of batches) {
-    // ten sam batchId przy ponowieniu = brak duplikatów na Dysku (CacheService w Code.gs)
-    const batchId = batch[0].batchId || makeBatchId();
-    batch.forEach((s) => {
-      s.batchId = batchId;
-      s.state = "sending";
-      s.el.dataset.state = "sending";
-    });
-    const batchBytes = batch.reduce((a, s) => a + s.blob.size, 0);
-    let ok = false;
-    for (let attempt = 0; attempt <= AUTO_RETRIES && !ok; attempt++) {
-      setSendStatus(
-        attempt
-          ? "Chwilowy problem - ponawiam wysyłkę…"
-          : `Wysyłanie ${pending.length} ${plural(pending.length)}…`
-      );
-      try {
-        const results = await postBatch(batch, batchId, (f) =>
-          setSendProgress(((doneBytes + batchBytes * f * 0.95) / total) * 100)
-        );
-        batch.forEach((s) => {
-          const r = results.find((x) => x && String(x.filename || "") === "fotobudka__" + s.name);
-          if (r && r.status === "ok") {
-            s.state = "sent";
-            s.el.dataset.state = "sent";
-          } else {
-            s.state = "error";
-            s.el.dataset.state = "error";
-            s.batchId = null; // serwer odpowiedział błędem -> ponowienie z nowym batchId
-            failed++;
-          }
-        });
-        ok = true;
-      } catch (e) {
-        console.warn("Wysyłka nieudana:", e);
-        if (attempt < AUTO_RETRIES) await new Promise((r) => setTimeout(r, 2500));
-      }
+  let s;
+  while ((s = sessionShots.find((x) => x.state === "pending"))) {
+    setShotState(s, "sending");
+    refreshSendUi();
+    s.tries++;
+    try {
+      await postShot(s);
+      setShotState(s, "sent");
+    } catch (e) {
+      console.warn("Wysyłka nieudana (" + s.name + "):", e);
+      setShotState(s, "error");
     }
-    if (!ok) {
-      batch.forEach((s) => {
-        s.state = "error";
-        s.el.dataset.state = "error";
-      });
-      failed += batch.length;
-    }
-    doneBytes += batchBytes;
-    setSendProgress((doneBytes / total) * 100);
   }
-
-  sending = false;
-  if (failed) {
-    setSendProgress(null);
-    setSendStatus(
-      navigator.onLine === false
-        ? "Brak połączenia z internetem. Zdjęcia są zapisane w telefonie - spróbuj ponownie."
-        : `Nie udało się wysłać: ${failed} ${plural(failed)}. Spróbuj ponownie.`,
-      "error"
-    );
-  } else {
-    setSendProgress(100);
-    setSendStatus("Wysłane! Zdjęcia trafiły do albumu pary młodej ♥", "ok");
-  }
+  uploading = false;
+  scheduleRetry();
   refreshSendUi();
 }
 
-btnSend.addEventListener("click", () => sendPending());
+btnSend.addEventListener("click", () => kickUploads(true));
+window.addEventListener("online", () => kickUploads(true));
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && sessionShots.some((s) => s.state === "error")) kickUploads(true);
+});
+window.addEventListener("beforeunload", (ev) => {
+  if (pendingShots().length) {
+    ev.preventDefault();
+    ev.returnValue = "";
+  }
+});
 
 async function captureJpeg() {
   if (!video.videoWidth) return;
@@ -2344,7 +2392,7 @@ async function captureJpeg() {
   const pad = (n) => String(n).padStart(2, "0");
   let guest = "";
   try { guest = (localStorage.getItem("wesele_guest_name") || "").normalize("NFC").replace(/[\\/:*?"<>|\x00-\x1f]+/g, "").replace(/\s+/g, "_").replace(/_+/g, "_").replace(/^[._]+|[._]+$/g, "").slice(0, 40); } catch (e) {}
-  const name = (guest ? guest + "__" : "") + `wesele-D-R-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.jpg`;
+  const name = uniqueName((guest ? guest + "__" : "") + `wesele-D-R-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.jpg`);
 
   // zapis lokalny (jak dotąd)
   const url = URL.createObjectURL(blob);
@@ -2358,7 +2406,7 @@ async function captureJpeg() {
   setStatus("Zapisano JPG ✓", "ok");
   setTimeout(() => setStatus(""), 2000);
 
-  // do wysyłki parze młodej
+  // do wysyłki parze młodej - startuje automatycznie w tle
   addSessionShot(blob, name);
 }
 
