@@ -2,9 +2,10 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cpath fill=%27%237a1f35%27 d=%27M16 29S3 20.5 3 11.5A7 7 0 0 1 16 8a7 7 0 0 1 13 3.5C29 20.5 16 29 16 29z%27/%3E%3C/svg%3E">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#7A1F2B" />
-  <meta name="description" content="Fotobudka ślubna z filtrami D & R - Dominika i Robert, 24.10.2026. Autor: Robert Kołodziejczyk" />
+  <meta name="description" content="Fotobudka ślubna z filtrami - Dominika i Robert, 24.10.2026" />
   <title>Fotobudka · filtry D &amp; R · Dominika &amp; Robert</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -306,7 +307,7 @@ body {
   padding-bottom: 4px;
 }
 
-.footer strong { color: var(--bordo); font-weight: 600; }
+.footer strong { color: #6e4a52; font-weight: 600; }
 
 .flash {
   position: absolute;
@@ -553,7 +554,7 @@ body {
 .send-fill { background: linear-gradient(90deg, var(--bordo), var(--blush)); }
 .send-status.ok { color: var(--soft-green-deep); }
 .footer { font-size: 12px; position: relative; z-index: 1; }
-.footer strong { color: var(--sand-deep); font-size: 10px; letter-spacing: 0.04em; font-weight: 500; }
+.footer strong { color: #6e4a52; font-size: 12px; letter-spacing: 0.04em; font-weight: 500; }
   
   .back-link-wrap{text-align:center;margin:0 0 10px;}
   .back-link-btn{display:inline-block;text-decoration:none;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:500;padding:11px 22px;border-radius:999px;border:1.5px solid rgba(122,31,43,0.35);background:linear-gradient(180deg,#fff 0%,var(--blush-soft,#F5D6DE) 100%);color:var(--bordo,#7A1F2B);white-space:nowrap;transition:transform .12s ease,box-shadow .15s ease;-webkit-tap-highlight-color:transparent;}
@@ -696,8 +697,8 @@ body {
     </section>
 
     <div class="action-row action-row-top">
-        <button type="button" class="btn btn-secondary" id="btn-restart">
-          Kamera
+        <button type="button" class="btn btn-secondary" id="btn-restart" aria-label="Zmień kamerę (przednia/tylna)">
+          Zmień kamerę
         </button>
         <button type="button" class="btn btn-primary" id="btn-capture" disabled>
           Zrób zdjęcie
@@ -778,9 +779,9 @@ body {
       </p>
     </section>
 
-    <section class="guest-card" id="guestCard" hidden aria-label="Imię do podpisu zdjęć (nieobowiązkowe)">
+    <section class="guest-card" id="guestCard" hidden aria-label="Imię do podpisu zdjęć (opcjonalnie)">
   <form class="gc-row" id="guestCardForm" autocomplete="on">
-    <label for="guestCardInput">Chcesz podpisać zdjęcia imieniem? (nieobowiązkowe)</label>
+    <label for="guestCardInput">Chcesz podpisać zdjęcia imieniem? (opcjonalnie)</label>
     <input id="guestCardInput" type="text" name="given-name" maxlength="40" placeholder="np. Dominika lub Robert" autocomplete="given-name">
     <button type="submit">Zapisz</button>
   </form>
@@ -954,6 +955,7 @@ async function initLandmarker() {
   }
 }
 
+let camFacing = "user";
 async function startCamera() {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw Object.assign(new Error("Brak getUserMedia"), { code: "NO_API" });
@@ -967,7 +969,7 @@ async function startCamera() {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: {
-        facingMode: { ideal: "user" },
+        facingMode: { ideal: camFacing },
         width: { ideal: 1280 },
         height: { ideal: 960 },
       },
@@ -2511,6 +2513,7 @@ if (bubbleBtn) {
 
 btnCapture.addEventListener("click", () => captureJpeg());
 btnRestart.addEventListener("click", async () => {
+  camFacing = camFacing === "user" ? "environment" : "user";
   cancelAnimationFrame(rafId);
   running = false;
   if (stream) {
