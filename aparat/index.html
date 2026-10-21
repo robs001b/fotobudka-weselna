@@ -2286,6 +2286,7 @@ function refreshSendUi() {
   } else {
     setChip("Wysłano ✓", "ok");
     setSendStatus("Wysłane! Zdjęcia trafiły do albumu pary młodej ♥", "ok");
+    buzz([200, 80, 200, 80, 350]);
   }
 }
 
@@ -2430,6 +2431,7 @@ window.addEventListener("beforeunload", (ev) => {
   }
 });
 
+function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
 async function captureJpeg() {
   if (!video.videoWidth) return;
   drawFrame(lastLandmarks);
@@ -2439,6 +2441,7 @@ async function captureJpeg() {
     setTimeout(() => flashEl.classList.remove("on"), 120);
   };
   flash();
+  buzz(30);
 
   let blob = await canvasToJpeg(JPEG_QUALITY);
   if (blob && blob.size > MAX_IMAGE_BYTES) blob = await canvasToJpeg(0.8);

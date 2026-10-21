@@ -2117,8 +2117,10 @@
     });
   }
 
+  function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
   function burstMiniConfetti(row) {
     if (!row) return;
+    buzz(30);
     const colors = ['#7A1F2B', '#E8A4B4', '#F5D6DE', '#922A38', '#C45A6A'];
     const n = 7;
     for (let i = 0; i < n; i++) {
@@ -2768,6 +2770,7 @@
   });
 
   function launchConfetti() {
+    buzz([200, 80, 200, 80, 350]);
     const ctx = confettiCanvas.getContext('2d');
     confettiCanvas.width = window.innerWidth;
     confettiCanvas.height = window.innerHeight;
