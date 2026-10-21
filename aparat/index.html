@@ -458,9 +458,10 @@ button.send-thumb:active { transform: scale(0.96); }
   padding: 6px 14px;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #fff3ee;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
+  color: #6b1626;
+  background: #fff;
+  border: 1.5px solid #c98a96;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
   border-radius: 999px;
   text-align: center;
   min-height: 1.1em;
@@ -479,8 +480,8 @@ button.send-thumb:active { transform: scale(0.96); }
   animation: chipSpin 0.8s linear infinite;
 }
 @keyframes chipSpin { to { transform: rotate(360deg); } }
-.upload-chip.ok { color: #d9f5c8; background: rgba(90,160,70,0.28); border-color: rgba(150,220,120,0.6); }
-.upload-chip.error { color: #fff; background: rgba(200,40,60,0.55); border-color: #ff8a9a; }
+.upload-chip.ok { color: #1f5a1a; background: #e3f5da; border-color: #6fae5c; }
+.upload-chip.error { color: #fff; background: #b3263c; border-color: #b3263c; }
 
 .send-thumb[data-state="sending"] img,
 .send-thumb[data-state="pending"] img { opacity: 0.6; }
