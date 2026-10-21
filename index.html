@@ -1514,9 +1514,6 @@
         try { v.muted = true; await v.play(); } catch (e2) {}
       }
     } catch (e) {}
-    try {
-      if (navigator.vibrate) navigator.vibrate(8);
-    } catch (e) {}
     return { wakeLockOk: !!wakeOk };
   }
 
