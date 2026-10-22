@@ -2115,6 +2115,32 @@
   }
 
   function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
+  // Mobile: po starcie wysyłki powoli przewiń do akapitu .lede (raz na start)
+  function scrollToLedeOnStart() {
+    try {
+      if (!window.matchMedia('(max-width: 820px), (pointer: coarse)').matches) return;
+      const lede = document.querySelector('p.lede');
+      if (!lede) return;
+      const start = window.scrollY;
+      const tgt = () => Math.max(0, Math.round(lede.getBoundingClientRect().top + window.scrollY - 10));
+      const target = tgt();
+      if (target <= start) return; // użytkownik już niżej - nie przewijamy w górę
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { window.scrollTo(0, target); setTimeout(() => window.scrollTo(0, tgt()), 400); return; }
+      const dur = 1300, t0 = performance.now(); let stop = false;
+      const cancel = () => { stop = true; };
+      ['touchstart', 'wheel'].forEach(ev => window.addEventListener(ev, cancel, { passive: true, once: true }));
+      const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const step = now => {
+        if (stop) return;
+        const k = Math.min(1, (now - t0) / dur);
+        window.scrollTo(0, start + (tgt() - start) * ease(k));
+        if (k < 1) requestAnimationFrame(step);
+        else ['touchstart', 'wheel'].forEach(ev => window.removeEventListener(ev, cancel));
+      };
+      requestAnimationFrame(step);
+    } catch (e) {}
+  }
+
   function burstMiniConfetti(row) {
     if (!row) return;
     buzz(30);
@@ -2463,6 +2489,7 @@
 
     // Od razu skopiuj do RAM — zanim paczki 3+ będą czekać (NotReadableError)
     counter.textContent = 'Przygotowanie plików…';
+    scrollToLedeOnStart();
     const pinnedFiles = [];
     for (let vi = 0; vi < validFiles.length; vi++) {
       const file = validFiles[vi];
